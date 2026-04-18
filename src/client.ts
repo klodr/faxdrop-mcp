@@ -3,7 +3,7 @@
  * Docs: https://www.faxdrop.com/for-developers
  */
 
-import { readFile, stat } from "node:fs/promises";
+import { open } from "node:fs/promises";
 import { basename, isAbsolute, resolve } from "node:path";
 
 const BASE_URL = "https://www.faxdrop.com";
@@ -109,14 +109,19 @@ export class FaxDropClient {
         "Compress the file or split it across multiple faxes."
       );
 
-    // Fast path: reject obviously oversized files before reading them.
-    const info = await stat(path);
-    if (info.size > MAX_FILE_BYTES) throw tooLarge(info.size);
-
-    // Re-validate against the buffer length to close the
-    // time-of-check-to-time-of-use (TOCTOU) gap — the file could be
-    // swapped between stat() and readFile().
-    const buf = await readFile(path);
+    // Pin the file descriptor: open() locks us to the inode at open time, so
+    // a swap of the path between syscalls can no longer cause us to read a
+    // different file than the one we size-checked. Both fh.stat() and
+    // fh.readFile() operate on the same underlying inode.
+    const fh = await open(path, "r");
+    let buf: Buffer;
+    try {
+      const info = await fh.stat();
+      if (info.size > MAX_FILE_BYTES) throw tooLarge(info.size);
+      buf = await fh.readFile();
+    } finally {
+      await fh.close();
+    }
     if (buf.length > MAX_FILE_BYTES) throw tooLarge(buf.length);
 
     const blob = new Blob([new Uint8Array(buf)], { type: MIME_BY_EXT[ext] });
