@@ -1,6 +1,6 @@
 {
   "name": "faxdrop-mcp",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "description": "Send real faxes from any MCP-enabled AI assistant. Wraps the FaxDrop API (PDF/DOCX/JPG/PNG, international numbers, status polling) with rate limits, dry-run mode, and audit logging.",
   "keywords": [
     "mcp",
@@ -46,7 +46,7 @@
     "prepublishOnly": "NODE_ENV=production npm run build"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.0",

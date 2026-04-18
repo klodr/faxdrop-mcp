@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-18
+
+### BREAKING
+
+- **Drop Node 18.** Minimum runtime is now Node 20. Node 18 reached EOL in
+  April 2025; no maintained MCP host (Claude Desktop/Code/Cursor/Continue
+  /Windsurf) ships Node 18. `engines.node` is now `>=20`, the CI matrix
+  is `[20, 22, 24]`, and tsup `target: "node20"`.
+
+### Changed
+
+- `eslint.config.js`: replaced the Node 18 `dirname(fileURLToPath(import.meta.url))`
+  shim with the native `import.meta.dirname` (Node 20.11+). Drops the
+  `node:path` and `node:url` imports.
+
 ## [0.1.8] - 2026-04-18
 
 ### Changed
