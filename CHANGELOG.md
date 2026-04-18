@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-04-19
+
+### Changed
+
+- `verify-release.yml` cleanup symmetric to klodr/mercury-invoicing-mcp PR #34:
+  - **Drop `npm install` + `npm audit signatures` from Path 1** entirely.
+    The 3 manual crypto checks already in Path 1 (SHA-1, SHA-512 SRI, ECDSA
+    P-256 registry signature) are strictly stronger than what `npm audit
+    signatures` does, and Scorecard's `Pinned-Dependencies` no longer flags
+    a non-existent `npm install`.
+  - **Wait loop also checks `.dist.signatures` length ≥ 1** before
+    proceeding, mirroring the later `SIG_COUNT` guard.
+  - **`echo -n` → `printf '%s'`** in the openssl dgst pipe (POSIX
+    portability).
+
 ## [0.1.8] - 2026-04-18
 
 ### Changed
