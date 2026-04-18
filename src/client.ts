@@ -39,7 +39,7 @@ export class FaxDropError extends Error {
     public errorType?: string,
     public hint?: string,
     public retryAfter?: number,
-    public body?: unknown
+    public body?: unknown,
   ) {
     super(message);
     this.name = "FaxDropError";
@@ -88,7 +88,7 @@ export class FaxDropClient {
         `filePath must be absolute; got: ${args.filePath}`,
         400,
         "bad_request",
-        "Pass an absolute path like /Users/you/doc.pdf"
+        "Pass an absolute path like /Users/you/doc.pdf",
       );
     }
     const path = resolve(args.filePath);
@@ -98,7 +98,7 @@ export class FaxDropClient {
         `Unsupported file type: ${ext || "(none)"}. Allowed: PDF, DOCX, JPEG, PNG.`,
         400,
         "bad_request",
-        "Convert the document to PDF first."
+        "Convert the document to PDF first.",
       );
     }
     const tooLarge = (size: number): FaxDropError =>
@@ -106,7 +106,7 @@ export class FaxDropClient {
         `File too large: ${size} bytes (max ${MAX_FILE_BYTES}).`,
         400,
         "bad_request",
-        "Compress the file or split it across multiple faxes."
+        "Compress the file or split it across multiple faxes.",
       );
 
     // Pin the file descriptor: open() locks us to the inode at open time, so
@@ -125,14 +125,13 @@ export class FaxDropClient {
       const chunkBuf = Buffer.alloc(CHUNK);
       const chunks: Buffer[] = [];
       let total = 0;
-      let bytesRead: number;
-      do {
-        ({ bytesRead } = await fh.read(chunkBuf, 0, CHUNK));
+      while (true) {
+        const { bytesRead } = await fh.read(chunkBuf, 0, CHUNK);
         if (bytesRead === 0) break;
         total += bytesRead;
         if (total > MAX_FILE_BYTES) throw tooLarge(total);
         chunks.push(Buffer.from(chunkBuf.subarray(0, bytesRead)));
-      } while (true);
+      }
       buf = Buffer.concat(chunks, total);
     } finally {
       await fh.close();
@@ -164,7 +163,7 @@ export class FaxDropClient {
   private async requestRaw(
     method: "GET" | "POST",
     path: string,
-    body?: FormData
+    body?: FormData,
   ): Promise<unknown> {
     const url = this.baseUrl + path;
     const headers: Record<string, string> = {
@@ -188,7 +187,10 @@ export class FaxDropClient {
     }
 
     if (!res.ok) {
-      const obj = (typeof json === "object" && json !== null ? json : {}) as Record<string, unknown>;
+      const obj = (typeof json === "object" && json !== null ? json : {}) as Record<
+        string,
+        unknown
+      >;
       const retryHeader = res.headers.get("retry-after");
       const retryAfter =
         typeof obj.retry_after === "number"
@@ -204,7 +206,7 @@ export class FaxDropClient {
         typeof obj.error_type === "string" ? obj.error_type : undefined,
         typeof obj.hint === "string" ? obj.hint : undefined,
         Number.isFinite(retryAfter) ? retryAfter : undefined,
-        json
+        json,
       );
     }
 
