@@ -5,7 +5,7 @@ import { registerAllTools } from "./tools/index.js";
 // Kept in sync with package.json by scripts/sync-version.mjs (called by the
 // `npm version` lifecycle hook). Do not edit manually — bump via
 // `npm version patch|minor|major`.
-export const VERSION = "0.1.3";
+export const VERSION = "0.1.4";
 
 export interface ServerOptions {
   apiKey: string;
