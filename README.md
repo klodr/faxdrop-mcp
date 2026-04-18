@@ -20,23 +20,19 @@ A Model Context Protocol (MCP) server that lets AI assistants (Claude, Cursor, C
 
 Faxing is still required by US healthcare, government forms, and a long tail of legal/financial workflows. FaxDrop is a hosted fax service with a clean HTTP API and a free tier (2 faxes/month). This MCP exposes it to LLMs with the safeguards an agent platform actually needs.
 
-### MCP wrapper vs calling the FaxDrop HTTP API directly
+### Why not just call the FaxDrop API directly?
 
-You *can* curl the FaxDrop API yourself or write a tiny `fetch` wrapper. What this MCP adds — and what you'd otherwise have to re-implement in every project that needs to send a fax from an agent:
+You can. But every agent that does ends up re-implementing the same handful of guards. This MCP gives them to you for free:
 
-| Concern | Raw HTTP call | This MCP |
-|---|---|---|
-| **Path-traversal safety** on the upload | up to you | Absolute-path check + extension allowlist + 10 MB cap, all enforced before the file is opened |
-| **TOCTOU race** between size-check and read | up to you | File descriptor pinned with `fs.open()`, chunked read enforces the cap continuously |
-| **Recipient number sanity** | up to you (FaxDrop returns 400 late) | E.164 regex validation at the Zod layer, before any network call |
-| **Secret leakage** in logs / errors | up to you | `FaxDropError.toString/toJSON` strip the response body; audit log redacts `apiKey` / `authorization` / `password` / etc. (property-tested with fast-check) |
-| **Dry-run mode** to test prompts | none — you'd have to fork your agent code | `FAXDROP_MCP_DRY_RUN=true` returns the would-be payload without calling FaxDrop |
-| **Audit trail** | none | Opt-in `FAXDROP_MCP_AUDIT_LOG` — append-only JSON Lines, file mode `0o600`, sensitive fields redacted |
-| **Error mapping** | raw 4xx/5xx body | Clean `isError: true` MCP response with `error_type`, `hint`, `retry_after` surfaced; explicit hints for HTTP 402 (no credits) and 429 (rate-limited) |
-| **Plug-and-play with LLM clients** | write & maintain your own tool definitions | One `npx -y faxdrop-mcp` line in Claude Desktop, Claude Code, Cursor, Continue, or OpenClaw |
-| **Supply-chain integrity** | n/a | Sigstore signing + SLSA in-toto attestation + npm provenance on every release ([verify](./SECURITY.md#verifying-releases)) |
+- **Input validation** — absolute-path + extension + 10 MB cap on the upload (all before the file is opened); E.164 regex on the fax number; no SSRF, no path traversal.
+- **TOCTOU-safe read** — file descriptor pinned with `fs.open()`, size enforced continuously while reading.
+- **No secret leakage** — error objects strip the response body; audit log redacts `apiKey`/`authorization`/`password`/etc. (property-tested with fast-check).
+- **Dry-run + audit log** — `FAXDROP_MCP_DRY_RUN=true` to test prompts without sending; `FAXDROP_MCP_AUDIT_LOG=/abs/path` for a JSONL trail (mode `0o600`).
+- **Clean errors** — FaxDrop's 402 / 429 / 4xx surfaced as MCP `isError` with `error_type`, `hint`, `retry_after`.
+- **Drop-in for any MCP client** — one `npx -y faxdrop-mcp` line in Claude Desktop / Code / Cursor / Continue / OpenClaw.
+- **Verifiable releases** — Sigstore-signed + SLSA in-toto attestation + npm provenance ([verify](./SECURITY.md#verifying-releases)).
 
-Net: the MCP is a thin (~12 KB) wrapper that turns "expose a fax-sending capability to an agent" from a one-week security review into a one-line config change.
+A ~12 KB wrapper that turns a one-week security review into a one-line config change.
 
 ## Installation
 
