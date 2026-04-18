@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-04-18
+
+### Changed
+
+- `verify-release.yml` — `npm audit signatures` no-op pattern now
+  also accepts the trailing `" in <duration>"` that npm 10+ emits
+  on `audited 0 packages in 200ms`. Without it the anchored full-line
+  match would never trigger and any non-zero exit would fail the job.
+
 ## [0.1.7] - 2026-04-18
 
 ### Changed
