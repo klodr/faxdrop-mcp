@@ -83,7 +83,7 @@ Three independent ways to verify:
 
 ```bash
 npm view faxdrop-mcp@<version> --json | jq .dist.attestations
-npm install --foreground-scripts --ignore-scripts faxdrop-mcp@<version>
+npm install --ignore-scripts faxdrop-mcp@<version>
 # or, for the strict provenance check across the dependency tree:
 npm audit signatures
 ```
