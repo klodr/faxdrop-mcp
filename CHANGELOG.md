@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-04-18
+
+### Changed
+
+- `verify-release.yml` polish post-merge of #18:
+  - Pass `KEYID` to `jq` via `--arg` instead of string interpolation
+    (avoids breakage on quotes/backslashes in keyids).
+  - Tighten the `npm audit signatures` no-op pattern to the exact
+    phrases npm emits ("audited 0 packages", "verified registry
+    signatures of 0 packages", "no packages with provenance to
+    verify"); previously broad fragments (e.g. "no signatures",
+    "0 packages") could mask real failures.
+
 ## [0.1.6] - 2026-04-18
 
 ### Changed
