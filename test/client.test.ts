@@ -20,7 +20,8 @@ function mockFetch(response: {
     ok: response.ok,
     status: response.status,
     statusText: response.statusText ?? (response.ok ? "OK" : "Error"),
-    text: async () => (typeof response.body === "string" ? response.body : JSON.stringify(response.body)),
+    text: async () =>
+      typeof response.body === "string" ? response.body : JSON.stringify(response.body),
     headers: { get: (k: string) => response.headers?.[k.toLowerCase()] ?? null },
   })) as unknown as typeof fetch;
 }
@@ -206,6 +207,30 @@ describe("FaxDropClient", () => {
       fail("Expected FaxDropError");
     } catch (err) {
       expect((err as FaxDropError).retryAfter).toBe(42);
+    }
+  });
+});
+
+describe("FaxDropClient — non-JSON response handling", () => {
+  it("falls back to raw text when the response body is not JSON", async () => {
+    mockFetch({
+      ok: false,
+      status: 502,
+      statusText: "Bad Gateway",
+      body: "<html><body>Bad gateway</body></html>",
+    });
+    const client = new FaxDropClient({ apiKey: "k" });
+    try {
+      await client.getFaxStatus("fax_abc");
+      fail("Expected FaxDropError");
+    } catch (err) {
+      expect(err).toBeInstanceOf(FaxDropError);
+      const e = err as FaxDropError;
+      expect(e.status).toBe(502);
+      // The body should be the raw HTML string (not parsed)
+      expect(e.body).toBe("<html><body>Bad gateway</body></html>");
+      // No structured error_type because the body wasn't a JSON object
+      expect(e.errorType).toBeUndefined();
     }
   });
 });

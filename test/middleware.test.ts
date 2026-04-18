@@ -1,9 +1,4 @@
-import {
-  isDryRun,
-  wrapToolHandler,
-  redactSensitive,
-  logAudit,
-} from "../src/middleware.js";
+import { isDryRun, wrapToolHandler, redactSensitive, logAudit } from "../src/middleware.js";
 import { FaxDropError } from "../src/client.js";
 import { mkdtempSync, readFileSync, statSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -193,9 +188,7 @@ describe("Middleware", () => {
       const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
       process.env.FAXDROP_MCP_AUDIT_LOG = "relative/audit.log";
       logAudit("faxdrop_send_fax", {}, "ok");
-      expect(errSpy).toHaveBeenCalledWith(
-        expect.stringContaining("must be an absolute path"),
-      );
+      expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("must be an absolute path"));
       errSpy.mockRestore();
     });
 
@@ -208,6 +201,53 @@ describe("Middleware", () => {
         expect.any(String),
       );
       errSpy.mockRestore();
+    });
+  });
+
+  describe("wrapToolHandler — extra coverage", () => {
+    let tmpDir: string;
+    let auditPath: string;
+
+    beforeEach(() => {
+      tmpDir = mkdtempSync(join(tmpdir(), "faxdrop-audit-extra-"));
+      auditPath = join(tmpDir, "audit.log");
+    });
+    afterEach(() => {
+      delete process.env.FAXDROP_MCP_AUDIT_LOG;
+      rmSync(tmpDir, { recursive: true, force: true });
+    });
+
+    it("logs an 'ok' audit entry on a successful write call", async () => {
+      process.env.FAXDROP_MCP_AUDIT_LOG = auditPath;
+      const handler = jest.fn(async () => ({
+        content: [{ type: "text" as const, text: "sent" }],
+      }));
+      const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
+      await wrapped({ recipientNumber: "+12125551234" });
+      const line = readFileSync(auditPath, "utf8");
+      expect(line).toContain('"tool":"faxdrop_send_fax"');
+      expect(line).toContain('"result":"ok"');
+    });
+
+    it("surfaces FaxDropError.hint for non-402, non-429 statuses", async () => {
+      const handler = jest.fn(async () => {
+        throw new FaxDropError("Bad input", 400, "bad_request", "Recheck the file extension");
+      });
+      const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
+      const result = await wrapped({});
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("FaxDrop API error 400");
+      expect(result.content[0].text).toContain("Hint: Recheck the file extension");
+    });
+
+    it("surfaces no hint for non-402/429 errors without err.hint", async () => {
+      const handler = jest.fn(async () => {
+        throw new FaxDropError("Server error", 500, "internal_error");
+      });
+      const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
+      const result = await wrapped({});
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toBe("FaxDrop API error 500 (internal_error): Server error");
     });
   });
 });

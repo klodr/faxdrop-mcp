@@ -7,7 +7,9 @@ import { FaxDropClient } from "../client.js";
 const FAX_NUMBER = z
   .string()
   .regex(/^\+[1-9]\d{6,14}$/, "Must be E.164 format, e.g. +12125551234")
-  .describe("Recipient fax number, international (E.164) format with leading + and country code, e.g. +12125551234");
+  .describe(
+    "Recipient fax number, international (E.164) format with leading + and country code, e.g. +12125551234",
+  );
 
 const EMAIL = z.string().email().describe("Sender email for delivery confirmation.");
 
@@ -20,9 +22,7 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
       filePath: z
         .string()
         .min(1)
-        .describe(
-          "Absolute path to the document to fax (PDF, DOCX, JPEG, or PNG, ≤10MB)."
-        ),
+        .describe("Absolute path to the document to fax (PDF, DOCX, JPEG, or PNG, ≤10MB)."),
       recipientNumber: FAX_NUMBER,
       senderName: z
         .string()
@@ -35,7 +35,7 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
         .boolean()
         .optional()
         .describe(
-          "Include a FaxDrop cover page. Free accounts default to true; paid accounts default to false."
+          "Include a FaxDrop cover page. Free accounts default to true; paid accounts default to false.",
         ),
       coverNote: z
         .string()
@@ -66,7 +66,7 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
     async (args) => {
       const data = await client.sendFax(args);
       return textResult(data);
-    }
+    },
   );
 
   defineTool(
@@ -82,6 +82,6 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
     async ({ faxId }) => {
       const data = await client.getFaxStatus(faxId);
       return textResult(data);
-    }
+    },
   );
 }
