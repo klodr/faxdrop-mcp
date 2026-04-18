@@ -210,6 +210,30 @@ describe("FaxDropClient", () => {
   });
 });
 
+describe("FaxDropClient — non-JSON response handling", () => {
+  it("falls back to raw text when the response body is not JSON", async () => {
+    mockFetch({
+      ok: false,
+      status: 502,
+      statusText: "Bad Gateway",
+      body: "<html><body>Bad gateway</body></html>",
+    });
+    const client = new FaxDropClient({ apiKey: "k" });
+    try {
+      await client.getFaxStatus("fax_abc");
+      fail("Expected FaxDropError");
+    } catch (err) {
+      expect(err).toBeInstanceOf(FaxDropError);
+      const e = err as FaxDropError;
+      expect(e.status).toBe(502);
+      // The body should be the raw HTML string (not parsed)
+      expect(e.body).toBe("<html><body>Bad gateway</body></html>");
+      // No structured error_type because the body wasn't a JSON object
+      expect(e.errorType).toBeUndefined();
+    }
+  });
+});
+
 describe("FaxDropError", () => {
   it("captures status, type, hint, retry-after", () => {
     const err = new FaxDropError("boom", 429, "rate_limited", "Wait", 30, { meta: 1 });
