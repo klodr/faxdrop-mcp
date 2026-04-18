@@ -101,6 +101,7 @@ export class FaxDropClient {
         "Convert the document to PDF first."
       );
     }
+    // Fast path: reject obviously oversized files before reading them.
     const info = await stat(path);
     if (info.size > MAX_FILE_BYTES) {
       throw new FaxDropError(
@@ -111,7 +112,18 @@ export class FaxDropClient {
       );
     }
 
+    // Then re-validate against the buffer length to close the
+    // time-of-check-to-time-of-use (TOCTOU) gap between stat() and
+    // readFile() — the file could be swapped between the two calls.
     const buf = await readFile(path);
+    if (buf.length > MAX_FILE_BYTES) {
+      throw new FaxDropError(
+        `File too large: ${buf.length} bytes (max ${MAX_FILE_BYTES}).`,
+        400,
+        "bad_request",
+        "Compress the file or split it across multiple faxes."
+      );
+    }
     const blob = new Blob([new Uint8Array(buf)], { type: MIME_BY_EXT[ext] });
 
     const form = new FormData();
