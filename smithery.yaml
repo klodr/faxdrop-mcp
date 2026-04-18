@@ -1,0 +1,18 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required:
+      - faxdropApiKey
+    properties:
+      faxdropApiKey:
+        type: string
+        description: FaxDrop API key (get one at https://faxdrop.com/account → Developer API → Generate Key)
+  commandFunction: |
+    (config) => ({
+      command: "npx",
+      args: ["-y", "faxdrop-mcp"],
+      env: {
+        FAXDROP_API_KEY: config.faxdropApiKey
+      }
+    })
