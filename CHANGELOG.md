@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-04-18
+
+Republish of 0.1.0. The original v0.1.0 release workflow created the
+GitHub Release and pushed the npm provenance attestation, but the
+`npm publish` step itself failed with HTTP 403 because the
+`NPM_TOKEN` lacked the "Create new packages" permission required to
+register a new package name. The token has been re-provisioned;
+0.1.1 is the same code republished with the corrected token.
+
 ## [0.1.0] - 2026-04-18
 
 First release.
