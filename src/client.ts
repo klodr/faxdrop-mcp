@@ -3,7 +3,7 @@
  * Docs: https://www.faxdrop.com/for-developers
  */
 
-import { readFile, stat } from "node:fs/promises";
+import { open } from "node:fs/promises";
 import { basename, isAbsolute, resolve } from "node:path";
 
 const BASE_URL = "https://www.faxdrop.com";
@@ -101,17 +101,43 @@ export class FaxDropClient {
         "Convert the document to PDF first."
       );
     }
-    const info = await stat(path);
-    if (info.size > MAX_FILE_BYTES) {
-      throw new FaxDropError(
-        `File too large: ${info.size} bytes (max ${MAX_FILE_BYTES}).`,
+    const tooLarge = (size: number): FaxDropError =>
+      new FaxDropError(
+        `File too large: ${size} bytes (max ${MAX_FILE_BYTES}).`,
         400,
         "bad_request",
         "Compress the file or split it across multiple faxes."
       );
+
+    // Pin the file descriptor: open() locks us to the inode at open time, so
+    // a swap of the path between syscalls can no longer cause us to read a
+    // different file than the one we size-checked. fh.stat() is a fast-path
+    // reject; the chunked read below enforces the cap continuously, so we
+    // never allocate more than MAX_FILE_BYTES + one chunk even if the file
+    // grows between stat() and the end of the read.
+    const fh = await open(path, "r");
+    let buf: Buffer;
+    try {
+      const info = await fh.stat();
+      if (info.size > MAX_FILE_BYTES) throw tooLarge(info.size);
+
+      const CHUNK = 64 * 1024;
+      const chunkBuf = Buffer.alloc(CHUNK);
+      const chunks: Buffer[] = [];
+      let total = 0;
+      let bytesRead: number;
+      do {
+        ({ bytesRead } = await fh.read(chunkBuf, 0, CHUNK));
+        if (bytesRead === 0) break;
+        total += bytesRead;
+        if (total > MAX_FILE_BYTES) throw tooLarge(total);
+        chunks.push(Buffer.from(chunkBuf.subarray(0, bytesRead)));
+      } while (true);
+      buf = Buffer.concat(chunks, total);
+    } finally {
+      await fh.close();
     }
 
-    const buf = await readFile(path);
     const blob = new Blob([new Uint8Array(buf)], { type: MIME_BY_EXT[ext] });
 
     const form = new FormData();
