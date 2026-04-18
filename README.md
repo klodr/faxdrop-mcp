@@ -107,16 +107,14 @@ Status values: `queued` | `sending` | `delivered` | `failed` | `partial`. Most U
 
 ## Safeguards
 
-All write tools (`faxdrop_send_fax`) go through middleware:
-
 | Knob | Env var | Default | Notes |
 |---|---|---|---|
-| Daily rate limit | `FAXDROP_MCP_RATE_LIMIT_send=N/day` | 100/day | FaxDrop's hard limit is 500/day; we cap lower so an agent loop cannot burn your quota. Use `…=N/minute`, `…=N/hour`, `…=N/day` or `…=N/week`. |
-| Disable rate limit | `FAXDROP_MCP_RATE_LIMIT_DISABLE=true` | off | For test scripts only. |
-| Dry run | `FAXDROP_MCP_DRY_RUN=true` | off | Returns the would-be payload (with sensitive fields redacted), never calls FaxDrop. |
-| Audit log | `FAXDROP_MCP_AUDIT_LOG=/abs/path/audit.log` | off | Append-only JSON Lines (`mode 0o600`). Sensitive args are redacted. |
+| Dry run | `FAXDROP_MCP_DRY_RUN=true` | off | Write tools (`faxdrop_send_fax`) return the would-be payload (sensitive fields redacted) and never call FaxDrop. Reads still pass through. |
+| Audit log | `FAXDROP_MCP_AUDIT_LOG=/abs/path/audit.log` | off | Append-only JSON Lines (file mode `0o600`). Sensitive args are redacted. |
 
-`FaxDropError` responses are mapped to clean `isError: true` MCP responses with `error_type`, `hint`, and `retry_after` surfaced to the caller. HTTP 402 (no credits) and 429 (rate-limited) get explicit hints.
+Rate limiting is left to FaxDrop itself (10/min, 100/h, 500/day per key). 429 responses get `error_type: "rate_limited"` and a `retry_after` value, both surfaced to the caller.
+
+`FaxDropError` responses are mapped to clean `isError: true` MCP responses with `error_type`, `hint`, and `retry_after`. HTTP 402 (no credits) and 429 (rate-limited) get explicit hints.
 
 ## Security
 

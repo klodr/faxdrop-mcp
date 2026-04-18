@@ -1,9 +1,6 @@
 import {
-  enforceRateLimit,
-  RateLimitError,
   isDryRun,
   wrapToolHandler,
-  resetRateLimitHistory,
   redactSensitive,
   logAudit,
 } from "../src/middleware.js";
@@ -12,78 +9,11 @@ import { mkdtempSync, readFileSync, statSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const ENV_KEYS = [
-  "FAXDROP_MCP_DRY_RUN",
-  "FAXDROP_MCP_RATE_LIMIT_DISABLE",
-  "FAXDROP_MCP_RATE_LIMIT_send",
-  "FAXDROP_MCP_AUDIT_LOG",
-];
+const ENV_KEYS = ["FAXDROP_MCP_DRY_RUN", "FAXDROP_MCP_AUDIT_LOG"];
 
 describe("Middleware", () => {
   beforeEach(() => {
     for (const k of ENV_KEYS) delete process.env[k];
-    resetRateLimitHistory();
-  });
-
-  describe("enforceRateLimit", () => {
-    it("does nothing for read tools (no category)", () => {
-      expect(() => enforceRateLimit("faxdrop_get_fax_status")).not.toThrow();
-      for (let i = 0; i < 100; i++) enforceRateLimit("faxdrop_get_fax_status");
-    });
-
-    it("respects FAXDROP_MCP_RATE_LIMIT_DISABLE=true", () => {
-      process.env.FAXDROP_MCP_RATE_LIMIT_DISABLE = "true";
-      // send default is 100/day, but disabled → unlimited
-      for (let i = 0; i < 200; i++) {
-        expect(() => enforceRateLimit("faxdrop_send_fax")).not.toThrow();
-      }
-    });
-
-    it("enforces custom env limit", () => {
-      process.env.FAXDROP_MCP_RATE_LIMIT_send = "2/day";
-      enforceRateLimit("faxdrop_send_fax");
-      enforceRateLimit("faxdrop_send_fax");
-      expect(() => enforceRateLimit("faxdrop_send_fax")).toThrow(RateLimitError);
-    });
-
-    it("supports per-minute window", () => {
-      process.env.FAXDROP_MCP_RATE_LIMIT_send = "1/minute";
-      enforceRateLimit("faxdrop_send_fax");
-      try {
-        enforceRateLimit("faxdrop_send_fax");
-        fail("Expected RateLimitError");
-      } catch (err) {
-        expect(err).toBeInstanceOf(RateLimitError);
-        expect((err as RateLimitError).message).toContain("/minute");
-      }
-    });
-
-    it("RateLimitError contains useful info", () => {
-      process.env.FAXDROP_MCP_RATE_LIMIT_send = "1/day";
-      enforceRateLimit("faxdrop_send_fax");
-      try {
-        enforceRateLimit("faxdrop_send_fax");
-        fail("Expected RateLimitError");
-      } catch (err) {
-        expect(err).toBeInstanceOf(RateLimitError);
-        const e = err as RateLimitError;
-        expect(e.toolName).toBe("faxdrop_send_fax");
-        expect(e.category).toBe("send");
-        expect(e.limit).toBe(1);
-        expect(e.message).toContain("Rate limit exceeded");
-        expect(e.message).toContain("Override with FAXDROP_MCP_RATE_LIMIT_send");
-      }
-    });
-
-    it("invalid rate limit format logs a warning and falls back to default", () => {
-      const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      process.env.FAXDROP_MCP_RATE_LIMIT_send = "not-a-rate";
-      expect(() => enforceRateLimit("faxdrop_send_fax")).not.toThrow();
-      expect(errSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Invalid rate limit format for FAXDROP_MCP_RATE_LIMIT_send"),
-      );
-      errSpy.mockRestore();
-    });
   });
 
   describe("isDryRun", () => {
@@ -108,7 +38,19 @@ describe("Middleware", () => {
       expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    it("returns dry-run response without calling handler when DRY_RUN=true", async () => {
+    it("does NOT short-circuit a read tool when DRY_RUN=true", async () => {
+      // Reads are safe to actually run even in dry-run; only writes are mocked.
+      process.env.FAXDROP_MCP_DRY_RUN = "true";
+      const handler = jest.fn(async () => ({
+        content: [{ type: "text" as const, text: "real-status" }],
+      }));
+      const wrapped = wrapToolHandler("faxdrop_get_fax_status", handler);
+      const result = await wrapped({ faxId: "fax_abc" });
+      expect(handler).toHaveBeenCalled();
+      expect(result.content[0].text).toBe("real-status");
+    });
+
+    it("returns dry-run response without calling handler when DRY_RUN=true on write", async () => {
       process.env.FAXDROP_MCP_DRY_RUN = "true";
       const handler = jest.fn(async () => ({
         content: [{ type: "text" as const, text: "ok" }],
@@ -118,18 +60,6 @@ describe("Middleware", () => {
       expect(handler).not.toHaveBeenCalled();
       expect(result.content[0].text).toContain("dryRun");
       expect(result.content[0].text).toContain("faxdrop_send_fax");
-    });
-
-    it("returns isError when rate limit is exceeded", async () => {
-      process.env.FAXDROP_MCP_RATE_LIMIT_send = "1/day";
-      const handler = jest.fn(async () => ({
-        content: [{ type: "text" as const, text: "ok" }],
-      }));
-      const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
-      await wrapped({});
-      const result2 = await wrapped({});
-      expect(result2.isError).toBe(true);
-      expect(result2.content[0].text).toContain("Rate limit exceeded");
     });
 
     it("converts FaxDropError 402 to isError with credits hint", async () => {
@@ -185,7 +115,7 @@ describe("Middleware", () => {
       const payload = result.content[0].text;
       expect(payload).toContain("[REDACTED]");
       expect(payload).not.toContain("fd_live_secret_should_not_appear");
-      expect(payload).toContain("+12125551234"); // recipient number is not sensitive
+      expect(payload).toContain("+12125551234");
     });
   });
 
