@@ -111,18 +111,32 @@ export class FaxDropClient {
 
     // Pin the file descriptor: open() locks us to the inode at open time, so
     // a swap of the path between syscalls can no longer cause us to read a
-    // different file than the one we size-checked. Both fh.stat() and
-    // fh.readFile() operate on the same underlying inode.
+    // different file than the one we size-checked. fh.stat() is a fast-path
+    // reject; the chunked read below enforces the cap continuously, so we
+    // never allocate more than MAX_FILE_BYTES + one chunk even if the file
+    // grows between stat() and the end of the read.
     const fh = await open(path, "r");
     let buf: Buffer;
     try {
       const info = await fh.stat();
       if (info.size > MAX_FILE_BYTES) throw tooLarge(info.size);
-      buf = await fh.readFile();
+
+      const CHUNK = 64 * 1024;
+      const chunkBuf = Buffer.alloc(CHUNK);
+      const chunks: Buffer[] = [];
+      let total = 0;
+      let bytesRead: number;
+      do {
+        ({ bytesRead } = await fh.read(chunkBuf, 0, CHUNK));
+        if (bytesRead === 0) break;
+        total += bytesRead;
+        if (total > MAX_FILE_BYTES) throw tooLarge(total);
+        chunks.push(Buffer.from(chunkBuf.subarray(0, bytesRead)));
+      } while (true);
+      buf = Buffer.concat(chunks, total);
     } finally {
       await fh.close();
     }
-    if (buf.length > MAX_FILE_BYTES) throw tooLarge(buf.length);
 
     const blob = new Blob([new Uint8Array(buf)], { type: MIME_BY_EXT[ext] });
 
