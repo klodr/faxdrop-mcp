@@ -89,7 +89,7 @@ describe("Tools wired through the server", () => {
     const result = await callTool("faxdrop_get_fax_status", { faxId: "fax_abc" });
     const content = (result as { content: { type: string; text: string }[] }).content[0];
     expect(content.type).toBe("text");
-    expect(content.text).toContain("\"status\": \"delivered\"");
+    expect(content.text).toContain('"status": "delivered"');
   });
 
   it("faxdrop_send_fax returns the create response", async () => {
@@ -104,6 +104,6 @@ describe("Tools wired through the server", () => {
       senderEmail: "t@example.com",
     });
     const content = (result as { content: { type: string; text: string }[] }).content[0];
-    expect(content.text).toContain("\"faxId\": \"fax_xyz\"");
+    expect(content.text).toContain('"faxId": "fax_xyz"');
   });
 });

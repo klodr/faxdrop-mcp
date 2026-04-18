@@ -20,7 +20,8 @@ function mockFetch(response: {
     ok: response.ok,
     status: response.status,
     statusText: response.statusText ?? (response.ok ? "OK" : "Error"),
-    text: async () => (typeof response.body === "string" ? response.body : JSON.stringify(response.body)),
+    text: async () =>
+      typeof response.body === "string" ? response.body : JSON.stringify(response.body),
     headers: { get: (k: string) => response.headers?.[k.toLowerCase()] ?? null },
   })) as unknown as typeof fetch;
 }

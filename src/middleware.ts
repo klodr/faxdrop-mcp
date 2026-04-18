@@ -53,7 +53,7 @@ export function redactSensitive(value: unknown): unknown {
 export function logAudit(
   toolName: string,
   args: unknown,
-  result: "ok" | "dry-run" | "error"
+  result: "ok" | "dry-run" | "error",
 ): void {
   const path = process.env.FAXDROP_MCP_AUDIT_LOG;
   if (!path) return;
@@ -88,7 +88,7 @@ export type ToolResult = { content: { type: "text"; text: string }[]; isError?: 
  */
 export function wrapToolHandler<TArgs>(
   toolName: string,
-  handler: (args: TArgs) => Promise<ToolResult>
+  handler: (args: TArgs) => Promise<ToolResult>,
 ): (args: TArgs) => Promise<ToolResult> {
   const isWriteOp = WRITE_TOOLS.has(toolName);
 
@@ -107,7 +107,7 @@ export function wrapToolHandler<TArgs>(
                 note: "FAXDROP_MCP_DRY_RUN=true; no actual fax was sent. Sensitive fields are redacted.",
               },
               null,
-              2
+              2,
             ),
           },
         ],

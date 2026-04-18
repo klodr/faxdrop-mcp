@@ -1,9 +1,4 @@
-import {
-  isDryRun,
-  wrapToolHandler,
-  redactSensitive,
-  logAudit,
-} from "../src/middleware.js";
+import { isDryRun, wrapToolHandler, redactSensitive, logAudit } from "../src/middleware.js";
 import { FaxDropError } from "../src/client.js";
 import { mkdtempSync, readFileSync, statSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -193,9 +188,7 @@ describe("Middleware", () => {
       const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
       process.env.FAXDROP_MCP_AUDIT_LOG = "relative/audit.log";
       logAudit("faxdrop_send_fax", {}, "ok");
-      expect(errSpy).toHaveBeenCalledWith(
-        expect.stringContaining("must be an absolute path"),
-      );
+      expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("must be an absolute path"));
       errSpy.mockRestore();
     });
 
