@@ -3,7 +3,7 @@
 > Send real faxes from any MCP-enabled AI assistant. Wraps the [FaxDrop](https://faxdrop.com) HTTP API.
 
 [![CI](https://github.com/klodr/faxdrop-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/klodr/faxdrop-mcp/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/klodr/faxdrop-mcp/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/klodr/faxdrop-mcp/security/code-scanning)
+[![CodeQL](https://github.com/klodr/faxdrop-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/klodr/faxdrop-mcp/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/klodr/faxdrop-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/klodr/faxdrop-mcp)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12578/badge)](https://www.bestpractices.dev/projects/12578)
 [![Socket Security](https://socket.dev/api/badge/npm/package/faxdrop-mcp)](https://socket.dev/npm/package/faxdrop-mcp)
