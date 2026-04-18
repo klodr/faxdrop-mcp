@@ -141,6 +141,6 @@ This policy covers vulnerabilities in this repository's code (the MCP server its
 - **Never** commit your `FAXDROP_API_KEY` to version control. Use environment variables or your MCP client's secret management.
 - The `faxdrop_send_fax` tool reads files from the user's local filesystem — only expose this MCP to agents you trust to act on your behalf, or run with `FAXDROP_MCP_DRY_RUN=true` to test prompts safely.
 - Be aware that exposing `faxdrop_send_fax` to an LLM that processes untrusted content opens a prompt injection vector (e.g. an email asking the agent to fax it elsewhere). Use human-in-the-loop confirmation in your client.
-- Keep this package updated; vulnerable versions will trigger Dependabot alerts on your projects.
+- Keep this package updated; vulnerable versions may trigger Dependabot alerts on projects that depend on it, provided Dependabot security updates are enabled for the consuming repository.
 
 Thanks for helping keep `faxdrop-mcp` and its users safe.
