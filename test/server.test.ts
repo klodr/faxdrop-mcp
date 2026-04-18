@@ -41,9 +41,12 @@ describe("createServer", () => {
 
   it("falls back to console.error when no log option is given", () => {
     const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-    createServer({ apiKey: "fd_live_test", baseUrl: "https://x.example.com" });
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("base URL overridden"));
-    errSpy.mockRestore();
+    try {
+      createServer({ apiKey: "fd_live_test", baseUrl: "https://x.example.com" });
+      expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("base URL overridden"));
+    } finally {
+      errSpy.mockRestore();
+    }
   });
 });
 
