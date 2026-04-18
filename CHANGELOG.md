@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-04-18
+
+### Added
+
+- **Post-release verification workflow** (`.github/workflows/verify-release.yml`):
+  re-exercises the three SECURITY.md verification paths (`npm audit signatures`,
+  `gh attestation verify`, `cosign verify-blob-attestation`) on every published
+  release. Runs on `workflow_run: completed` of `Release & npm publish` and
+  fails fast if provenance, the Sigstore bundle, or the attached release assets
+  drift. cosign installed via `sigstore/cosign-installer@v4.1.1` (SHA-pinned).
+
 ## [0.1.3] - 2026-04-18
 
 ### Documentation
