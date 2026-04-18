@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-04-18
+
+First release.
+
+Two MCP tools wrapping the FaxDrop API: `faxdrop_send_fax` and
+`faxdrop_get_fax_status`. Sigstore-signed releases with SLSA in-toto
+attestation + npm provenance. CI on Node 18/20/22 with ESLint v9 +
+Prettier + 96%+ coverage. See [README](./README.md), [SECURITY.md](./SECURITY.md),
+[ASSURANCE_CASE.md](./ASSURANCE_CASE.md), and [CONTINUITY.md](./CONTINUITY.md)
+for the full feature, security, threat-model, and continuity story.
+
 ### Added
 
 - `test/fuzz.test.ts`: property-based tests using `fast-check`. Covers `redactSensitive` (no leak through any sensitive key at any depth, mixed-case variants exercise the case-folding path) and `FaxDropError` (toString / toJSON never expose the response body). Recognised by OpenSSF Scorecard as a fuzz testing tool.
