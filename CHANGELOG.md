@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-04-18
+
+### Changed
+
+- `.github/workflows/verify-release.yml` — `gh attestation verify` now also
+  passes `--cert-identity` (in addition to `--signer-workflow` and
+  `--source-ref`) to lock the exact Fulcio SAN encoded in the attestation
+  certificate, matching what cosign verifies in Path 3. Symmetric to
+  klodr/mercury-invoicing-mcp v0.7.6.
+
 ## [0.1.4] - 2026-04-18
 
 ### Added
