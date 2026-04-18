@@ -1,5 +1,101 @@
 # Security Policy
 
+## Security model — what you can and cannot expect
+
+This section documents the project's **security requirements**: guarantees
+the maintainer commits to, and limits that callers must account for.
+
+### What this MCP provides
+
+- **Authenticated transport**: every FaxDrop API call goes over HTTPS with
+  the user-supplied `X-API-Key`. No fallback to HTTP, no key in URL params.
+- **Input validation**: all tool inputs are validated by Zod schemas before
+  reaching `FaxDropClient`. The fax recipient number must match E.164
+  (`/^\+[1-9]\d{6,14}$/`); the `faxId` is URL-encoded; the upload `filePath`
+  must be absolute and the file must have an allowed extension (PDF, DOCX,
+  JPEG, PNG) and be ≤10 MB — all enforced before any network call.
+- **No secret leakage**: `FaxDropError.toString()` and `toJSON()` never
+  include the raw API response body. The audit log redacts `apiKey`,
+  `authorization`, `password`, `token`, `secret`, `x-api-key` at any depth
+  (see `redactSensitive` in `src/middleware.ts`, covered by property-based
+  tests in `test/fuzz.test.ts`).
+- **Supply-chain integrity**: every release artifact is signed with Sigstore
+  (`*.sigstore`) and ships an SLSA in-toto attestation (`*.intoto.jsonl`).
+  npm publishes carry [provenance](https://docs.npmjs.com/generating-provenance-statements).
+  All GitHub Actions in `.github/workflows/` are pinned by full commit SHA.
+- **Least-privilege CI**: the release workflow is split into a read-only
+  build job and a publish job (release-only) that holds `NPM_TOKEN`.
+- **Defense against runaway agents**: dry-run mode (`FAXDROP_MCP_DRY_RUN=true`)
+  exercises a write tool without actually sending a fax. FaxDrop itself
+  enforces 10/min, 100/h, 500/day per key and returns 429 with `retry_after`
+  which is surfaced to the caller.
+- **Optional audit trail**: `FAXDROP_MCP_AUDIT_LOG=/abs/path/audit.log`
+  writes an append-only JSON Lines record (file mode `0o600`, sensitive
+  fields redacted) of every write call.
+- **Fail closed**: 60 s `AbortSignal.timeout` on every fetch; missing
+  `FAXDROP_API_KEY` exits at startup.
+
+### What this MCP does NOT protect against
+
+- **Compromise of the host environment**: if your shell, terminal, or MCP
+  client is compromised, your `FAXDROP_API_KEY` and the documents you have
+  on disk can be stolen by the attacker. This MCP cannot detect or prevent
+  that.
+- **Malicious LLM prompts (prompt injection)**: an LLM that exposes
+  `faxdrop_send_fax` to untrusted content (an email, a fetched web page)
+  can be tricked into sending an arbitrary file to an attacker-controlled
+  number. The tool description requires user confirmation, but enforcement
+  is up to the MCP client. Mitigations: enable `FAXDROP_MCP_DRY_RUN`,
+  require human-in-the-loop confirmation, or do not expose this MCP to
+  channels carrying untrusted content.
+- **Account-level FaxDrop security**: 2FA, billing, fraud detection, key
+  rotation are FaxDrop's responsibility, not this MCP's.
+- **Network-level attackers** beyond what TLS provides: this MCP relies on
+  Node's built-in `fetch` and the system trust store. No certificate pinning.
+- **Logging downstream of this MCP**: the audit log redacts sensitive fields,
+  but if the MCP client (Claude Desktop, Cursor, etc.) records tool inputs
+  to its own log, that is outside this project's control.
+
+## Verifying releases
+
+Every published release of `faxdrop-mcp` is cryptographically signed.
+There is **no private signing key** to manage: signing is keyless via
+[Sigstore](https://www.sigstore.dev/) using GitHub's OIDC identity
+through the [`actions/attest-build-provenance`](https://github.com/actions/attest-build-provenance)
+workflow. The trust chain is: GitHub OIDC → Fulcio (short-lived cert) →
+Rekor (transparency log).
+
+Three independent ways to verify:
+
+### 1. npm package — npm CLI
+
+```bash
+npm view faxdrop-mcp@<version> --json | jq .dist.attestations
+npm install --foreground-scripts --ignore-scripts faxdrop-mcp@<version>
+# or, for the strict provenance check across the dependency tree:
+npm audit signatures
+```
+
+### 2. GitHub Release artifacts — `gh attestation`
+
+```bash
+gh release download v<version> --repo klodr/faxdrop-mcp --pattern 'index.js*'
+gh attestation verify index.js --repo klodr/faxdrop-mcp
+```
+
+### 3. SLSA in-toto attestation — `cosign`
+
+```bash
+cosign verify-blob-attestation \
+  --signature index.js.intoto.jsonl \
+  --certificate-identity-regexp '^https://github\.com/klodr/faxdrop-mcp/' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  index.js
+```
+
+Any verification failure means the artifact was not built by the official
+release pipeline — do not install it.
+
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability in `faxdrop-mcp`, please report it **privately** so we can address it before any disclosure.

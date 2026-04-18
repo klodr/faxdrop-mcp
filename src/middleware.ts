@@ -20,21 +20,32 @@ export function isDryRun(): boolean {
   return process.env.FAXDROP_MCP_DRY_RUN === "true";
 }
 
-const SENSITIVE_KEYS = new Set([
+/**
+ * Lower-case names of fields that must never appear in audit logs, dry-run
+ * payloads, or error responses. Exported so test/fuzz.test.ts uses the
+ * canonical list (avoids drift between implementation and properties).
+ *
+ * Frozen at runtime: `as const` only widens the type, so without
+ * Object.freeze the exported array would still be mutable from outside the
+ * module. Freezing locks it down at runtime too.
+ */
+export const SENSITIVE_KEYS = Object.freeze([
   "apikey",
   "authorization",
   "password",
   "token",
   "secret",
   "x-api-key",
-]);
+] as const);
+
+const SENSITIVE_KEYS_SET: ReadonlySet<string> = new Set(SENSITIVE_KEYS);
 
 export function redactSensitive(value: unknown): unknown {
   if (value === null || typeof value !== "object") return value;
   if (Array.isArray(value)) return value.map(redactSensitive);
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-    out[k] = SENSITIVE_KEYS.has(k.toLowerCase()) ? "[REDACTED]" : redactSensitive(v);
+    out[k] = SENSITIVE_KEYS_SET.has(k.toLowerCase()) ? "[REDACTED]" : redactSensitive(v);
   }
   return out;
 }
