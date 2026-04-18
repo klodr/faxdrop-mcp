@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-04-18
+
+### Documentation
+
+- `SECURITY.md`: new entry under "What this MCP does NOT protect against"
+  describing prompt injection through fax response data — cover-page fields
+  (`coverNote`, `recipientName`, `subject`, `senderCompany`, `senderPhone`)
+  can round-trip through `faxdrop_get_fax_status` and re-enter the LLM
+  context as "trusted" tool output. Reminder that read-then-write chains
+  require explicit user confirmation. No code changes.
+
 ## [0.1.2] - 2026-04-18
 
 ### Fixed
