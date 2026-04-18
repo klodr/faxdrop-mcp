@@ -9,10 +9,6 @@ const FAX_NUMBER = z
   .regex(/^\+[1-9]\d{6,14}$/, "Must be E.164 format, e.g. +12125551234")
   .describe("Recipient fax number, international (E.164) format with leading + and country code, e.g. +12125551234");
 
-// FaxDrop API key prefix is `fd_live_` per the official docs. Keys are 32 hex
-// chars after the prefix. We don't reject other shapes here (sandbox keys,
-// future formats), but we do validate the basic length so we surface obvious
-// typos before the API does.
 const EMAIL = z.string().email().describe("Sender email for delivery confirmation.");
 
 export function registerFaxTools(server: McpServer, client: FaxDropClient): void {
