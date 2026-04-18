@@ -83,15 +83,24 @@ gh release download v<version> --repo klodr/faxdrop-mcp --pattern 'index.js*'
 gh attestation verify index.js --repo klodr/faxdrop-mcp
 ```
 
-### 3. SLSA in-toto attestation — `cosign`
+### 3. Sigstore bundle (with embedded SLSA in-toto attestation) — `cosign`
+
+The `index.js.sigstore` bundle is what `actions/attest-build-provenance`
+emits: a Sigstore-format bundle containing the DSSE-wrapped SLSA in-toto
+attestation plus the Fulcio certificate and the Rekor inclusion proof.
+That's the file `cosign` wants for keyless verification:
 
 ```bash
 cosign verify-blob-attestation \
-  --signature index.js.intoto.jsonl \
+  --bundle index.js.sigstore \
   --certificate-identity-regexp '^https://github\.com/klodr/faxdrop-mcp/' \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
   index.js
 ```
+
+The companion `index.js.intoto.jsonl` shipped in the same release is the
+DSSE envelope on its own, exposed for tools (like OpenSSF Scorecard's
+`Signed-Releases` check) that scan release assets by file extension.
 
 Any verification failure means the artifact was not built by the official
 release pipeline — do not install it.
