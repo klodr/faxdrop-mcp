@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `test/fuzz.test.ts`: property-based tests using `fast-check`. Covers `redactSensitive` (no leak through any sensitive key at any depth, mixed-case variants exercise the case-folding path) and `FaxDropError` (toString / toJSON never expose the response body). Recognised by OpenSSF Scorecard as a fuzz testing tool.
+- `release.yml`: now also emits `dist/index.js.intoto.jsonl` (SLSA in-toto attestation extracted from the Sigstore bundle's DSSE envelope, with non-null guard) alongside `dist/index.js.sigstore`. Lifts Scorecard's `Signed-Releases` check from 8/10 to 10/10.
+- `CONTINUITY.md`: project continuity plan with a fork-and-continue checklist (Best Practices Silver: `access_continuity`).
+- `ASSURANCE_CASE.md`: threat model, trust boundaries, secure-design principles, and CWE/OWASP weakness mapping (Best Practices Silver: `assurance_case`).
+- `SECURITY.md`: explicit "Security model" section documenting what the MCP guarantees and what it does NOT protect against; "Verifying releases" section with three independent verification paths (npm CLI, `gh attestation`, `cosign verify-blob-attestation`).
+
+### Changed
+
+- `src/middleware.ts`: `SENSITIVE_KEYS` is now exported and `Object.freeze`d so the fuzz tests can reuse the canonical list and external code cannot mutate it at runtime.
+
 ## [0.1.0] - 2026-04-18
 
 ### Added
