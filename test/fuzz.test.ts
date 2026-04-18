@@ -16,8 +16,8 @@ import { FaxDropError } from "../src/client.js";
 // will fail on any of the variants below.
 const mixedCaseKeys = SENSITIVE_KEYS.flatMap((k) => [
   k.toUpperCase(),
-  k.charAt(0).toUpperCase() + k.slice(1),                                    // PascalCase
-  [...k].map((c, i) => (i % 2 === 0 ? c.toUpperCase() : c)).join(""),        // alternating
+  k.charAt(0).toUpperCase() + k.slice(1), // PascalCase
+  [...k].map((c, i) => (i % 2 === 0 ? c.toUpperCase() : c)).join(""), // alternating
 ]);
 
 describe("Fuzz: redactSensitive", () => {
@@ -56,9 +56,7 @@ describe("Fuzz: redactSensitive", () => {
             const ao = a as Record<string, unknown>;
             const bo = b as Record<string, unknown>;
             for (const k of Object.keys(ao)) {
-              if (
-                (SENSITIVE_KEYS as readonly string[]).includes(k.toLowerCase())
-              ) {
+              if ((SENSITIVE_KEYS as readonly string[]).includes(k.toLowerCase())) {
                 if (bo[k] !== "[REDACTED]") return false;
               } else {
                 stack.push({ a: ao[k], b: bo[k] });
@@ -76,9 +74,9 @@ describe("Fuzz: redactSensitive", () => {
     fc.assert(
       fc.property(
         fc.dictionary(
-          fc.string({ minLength: 1, maxLength: 8 }).filter(
-            (k) => !(SENSITIVE_KEYS as readonly string[]).includes(k.toLowerCase()),
-          ),
+          fc
+            .string({ minLength: 1, maxLength: 8 })
+            .filter((k) => !(SENSITIVE_KEYS as readonly string[]).includes(k.toLowerCase())),
           fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
           { maxKeys: 8 },
         ),
@@ -115,7 +113,9 @@ describe("Fuzz: FaxDropError serialisation", () => {
   // Sentinel that fast-check's string arbitraries cannot reasonably produce,
   // AND filter `message` so it can never collide.
   const SENTINEL = "__LEAK_SENTINEL_4f9c2b__";
-  const safeMessage = fc.string({ minLength: 1, maxLength: 50 }).filter((m) => !m.includes(SENTINEL));
+  const safeMessage = fc
+    .string({ minLength: 1, maxLength: 50 })
+    .filter((m) => !m.includes(SENTINEL));
 
   it("toString never leaks the response body", () => {
     fc.assert(
