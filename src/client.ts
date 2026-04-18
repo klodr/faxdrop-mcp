@@ -125,14 +125,13 @@ export class FaxDropClient {
       const chunkBuf = Buffer.alloc(CHUNK);
       const chunks: Buffer[] = [];
       let total = 0;
-      let bytesRead: number;
-      do {
-        ({ bytesRead } = await fh.read(chunkBuf, 0, CHUNK));
+      while (true) {
+        const { bytesRead } = await fh.read(chunkBuf, 0, CHUNK);
         if (bytesRead === 0) break;
         total += bytesRead;
         if (total > MAX_FILE_BYTES) throw tooLarge(total);
         chunks.push(Buffer.from(chunkBuf.subarray(0, bytesRead)));
-      } while (true);
+      }
       buf = Buffer.concat(chunks, total);
     } finally {
       await fh.close();

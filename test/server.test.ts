@@ -1,5 +1,8 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createServer, VERSION } from "../src/server.js";
 
 describe("createServer", () => {
@@ -49,9 +52,25 @@ describe("Tools wired through the server", () => {
   // wrapToolHandler + textResult), which the schema-only listTools test
   // doesn't reach.
   const ORIGINAL_FETCH = global.fetch;
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "faxdrop-int-"));
+  });
   afterEach(() => {
     global.fetch = ORIGINAL_FETCH;
+    rmSync(tmpDir, { recursive: true, force: true });
   });
+
+  function mockJsonResponse(body: unknown) {
+    global.fetch = (async () => ({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      text: async () => JSON.stringify(body),
+      headers: { get: () => null },
+    })) as unknown as typeof fetch;
+  }
 
   async function callTool(toolName: string, args: Record<string, unknown>) {
     const server = createServer({ apiKey: "fd_live_test", log: () => {} });
@@ -66,14 +85,7 @@ describe("Tools wired through the server", () => {
   }
 
   it("faxdrop_get_fax_status returns the JSON status", async () => {
-    global.fetch = (async () => ({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      text: async () => JSON.stringify({ id: "fax_abc", status: "delivered" }),
-      headers: { get: () => null },
-    })) as unknown as typeof fetch;
-
+    mockJsonResponse({ id: "fax_abc", status: "delivered" });
     const result = await callTool("faxdrop_get_fax_status", { faxId: "fax_abc" });
     const content = (result as { content: { type: string; text: string }[] }).content[0];
     expect(content.type).toBe("text");
@@ -81,20 +93,9 @@ describe("Tools wired through the server", () => {
   });
 
   it("faxdrop_send_fax returns the create response", async () => {
-    const { mkdtempSync, writeFileSync } = await import("node:fs");
-    const { tmpdir } = await import("node:os");
-    const { join } = await import("node:path");
-    const dir = mkdtempSync(join(tmpdir(), "faxdrop-int-"));
-    const pdf = join(dir, "doc.pdf");
+    const pdf = join(tmpDir, "doc.pdf");
     writeFileSync(pdf, "%PDF-1.4\n%fake\n");
-
-    global.fetch = (async () => ({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      text: async () => JSON.stringify({ success: true, faxId: "fax_xyz", status: "queued" }),
-      headers: { get: () => null },
-    })) as unknown as typeof fetch;
+    mockJsonResponse({ success: true, faxId: "fax_xyz", status: "queued" });
 
     const result = await callTool("faxdrop_send_fax", {
       filePath: pdf,
