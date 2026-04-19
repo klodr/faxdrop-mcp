@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Minor dep bumps**: `@modelcontextprotocol/sdk` 1.25 → **1.29.0**,
   `tsup` 8.3 → **8.5.1**.
 - TypeScript target ES2022 → **ES2023** (Node 20 supports it natively).
+- **Test runner: jest → vitest** (`vitest@4.1.4` + `@vitest/coverage-v8`).
+  Drops `jest`, `@types/jest`, `ts-jest` and their deprecated `glob@10`
+  / `inflight` / `babel-plugin-istanbul` transitives
+  ([jestjs/jest#15173](https://github.com/jestjs/jest/issues/15173)).
+  Native ESM/TS, no preset. v8 coverage instead of istanbul. API is
+  drop-in: `jest.fn`/`jest.spyOn` → `vi.fn`/`vi.spyOn`.
 
 ## [0.1.9] - 2026-04-19
 
