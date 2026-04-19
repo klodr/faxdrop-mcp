@@ -9,12 +9,18 @@
 import { appendFileSync } from "node:fs";
 import { isAbsolute } from "node:path";
 import { FaxDropError } from "./client.js";
+import { sanitizeForLlm } from "./sanitize.js";
 
 /**
- * Tools that mutate state outside the process (i.e. actually send a fax).
- * Read-only tools bypass dry-run + audit log.
+ * Tools that mutate state outside the in-memory tool handler (sending a
+ * fax over the wire OR persisting trust expansion to disk). Read-only
+ * tools bypass dry-run + audit log.
+ *
+ * `faxdrop_pair_number` writes to paired.json — exactly the kind of trust
+ * expansion you want recorded in the audit log, and that you want
+ * dry-run-friendly during setup.
  */
-const WRITE_TOOLS = new Set<string>(["faxdrop_send_fax"]);
+const WRITE_TOOLS = new Set<string>(["faxdrop_send_fax", "faxdrop_pair_number"]);
 
 export function isDryRun(): boolean {
   return process.env.FAXDROP_MCP_DRY_RUN === "true";
@@ -74,7 +80,17 @@ export function logAudit(
   }
 }
 
-export type ToolResult = { content: { type: "text"; text: string }[]; isError?: boolean };
+export type ToolResult = {
+  content: { type: "text"; text: string }[];
+  /**
+   * Per MCP spec (2025-06-18+), the parseable JSON form of the response.
+   * `content[0].text` is sanitized + fence-wrapped for safe LLM display
+   * and is NOT JSON-parseable; programmatic consumers should read
+   * `structuredContent` instead.
+   */
+  structuredContent?: Record<string, unknown>;
+  isError?: boolean;
+};
 
 /**
  * Wrap a tool handler with dry-run + audit + FaxDrop error mapping.
@@ -95,22 +111,15 @@ export function wrapToolHandler<TArgs>(
   return async (args: TArgs): Promise<ToolResult> => {
     if (isWriteOp && isDryRun()) {
       logAudit(toolName, args, "dry-run");
+      const dryPayload = {
+        dryRun: true,
+        tool: toolName,
+        wouldCallWith: redactSensitive(args),
+        note: "FAXDROP_MCP_DRY_RUN=true; no actual fax was sent. Sensitive fields are redacted.",
+      };
       return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                dryRun: true,
-                tool: toolName,
-                wouldCallWith: redactSensitive(args),
-                note: "FAXDROP_MCP_DRY_RUN=true; no actual fax was sent. Sensitive fields are redacted.",
-              },
-              null,
-              2,
-            ),
-          },
-        ],
+        content: [{ type: "text", text: sanitizeForLlm(JSON.stringify(dryPayload, null, 2)) }],
+        structuredContent: dryPayload,
       };
     }
 
@@ -123,19 +132,32 @@ export function wrapToolHandler<TArgs>(
       if (err instanceof FaxDropError) {
         const hint =
           err.status === 402
-            ? " (No fax credits remaining — see https://faxdrop.com/pricing.)"
+            ? " (No fax credits remaining — top up at https://faxdrop.com/pricing)"
             : err.status === 429 && err.retryAfter
               ? ` (Rate-limited by FaxDrop; retry in ${err.retryAfter}s.)`
               : err.hint
                 ? ` Hint: ${err.hint}`
                 : "";
+        // err.message and err.hint can be reflected from the FaxDrop API
+        // body (attacker-influenced), so route them through sanitize+fence
+        // and surface the structured form for programmatic consumers.
+        const errorPayload = {
+          error_type: err.errorType ?? "fax_error",
+          status: err.status,
+          message: err.message,
+          hint: err.hint,
+          retryAfter: err.retryAfter,
+        };
         return {
           content: [
             {
               type: "text",
-              text: `FaxDrop API error ${err.status}${err.errorType ? ` (${err.errorType})` : ""}: ${err.message}${hint}`,
+              text: sanitizeForLlm(
+                `FaxDrop API error ${err.status}${err.errorType ? ` (${err.errorType})` : ""}: ${err.message}${hint}`,
+              ),
             },
           ],
+          structuredContent: errorPayload,
           isError: true,
         };
       }

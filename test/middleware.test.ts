@@ -247,7 +247,35 @@ describe("Middleware", () => {
       const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
       const result = await wrapped({});
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toBe("FaxDrop API error 500 (internal_error): Server error");
+      expect(result.content[0].text).toContain(
+        "FaxDrop API error 500 (internal_error): Server error",
+      );
+      // Sanitize fence is now applied to error responses too (SEC-001 fix).
+      expect(result.content[0].text).toContain("<untrusted-tool-output>");
+      // structuredContent is the parseable counterpart for programmatic consumers.
+      expect(result.structuredContent).toMatchObject({
+        error_type: "internal_error",
+        status: 500,
+        message: "Server error",
+      });
+    });
+
+    it("falls back to error_type 'fax_error' when err.errorType is undefined", async () => {
+      const handler = vi.fn(async () => {
+        // No errorType passed — exercises the `?? "fax_error"` fallback.
+        throw new FaxDropError("boom", 500);
+      });
+      const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
+      const result = await wrapped({});
+      expect(result.isError).toBe(true);
+      expect(result.structuredContent).toMatchObject({
+        error_type: "fax_error",
+        status: 500,
+        message: "boom",
+      });
+      // Without errorType, the formatted message also drops the parenthesised type.
+      expect(result.content[0].text).toContain("FaxDrop API error 500: boom");
+      expect(result.content[0].text).not.toContain("(undefined)");
     });
   });
 });
