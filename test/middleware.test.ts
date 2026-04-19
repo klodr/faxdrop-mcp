@@ -24,7 +24,7 @@ describe("Middleware", () => {
 
   describe("wrapToolHandler", () => {
     it("passes through read tool calls unchanged", async () => {
-      const handler = jest.fn(async () => ({
+      const handler = vi.fn(async () => ({
         content: [{ type: "text" as const, text: "ok" }],
       }));
       const wrapped = wrapToolHandler("faxdrop_get_fax_status", handler);
@@ -36,7 +36,7 @@ describe("Middleware", () => {
     it("does NOT short-circuit a read tool when DRY_RUN=true", async () => {
       // Reads are safe to actually run even in dry-run; only writes are mocked.
       process.env.FAXDROP_MCP_DRY_RUN = "true";
-      const handler = jest.fn(async () => ({
+      const handler = vi.fn(async () => ({
         content: [{ type: "text" as const, text: "real-status" }],
       }));
       const wrapped = wrapToolHandler("faxdrop_get_fax_status", handler);
@@ -47,7 +47,7 @@ describe("Middleware", () => {
 
     it("returns dry-run response without calling handler when DRY_RUN=true on write", async () => {
       process.env.FAXDROP_MCP_DRY_RUN = "true";
-      const handler = jest.fn(async () => ({
+      const handler = vi.fn(async () => ({
         content: [{ type: "text" as const, text: "ok" }],
       }));
       const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
@@ -58,7 +58,7 @@ describe("Middleware", () => {
     });
 
     it("converts FaxDropError 402 to isError with credits hint", async () => {
-      const handler = jest.fn(async () => {
+      const handler = vi.fn(async () => {
         throw new FaxDropError("No credits", 402, "payment_required");
       });
       const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
@@ -69,7 +69,7 @@ describe("Middleware", () => {
     });
 
     it("converts FaxDropError 429 to isError with retry-after hint", async () => {
-      const handler = jest.fn(async () => {
+      const handler = vi.fn(async () => {
         throw new FaxDropError("Slow down", 429, "rate_limited", undefined, 30);
       });
       const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
@@ -80,7 +80,7 @@ describe("Middleware", () => {
     });
 
     it("converts FaxDropError 400 with hint surfaced", async () => {
-      const handler = jest.fn(async () => {
+      const handler = vi.fn(async () => {
         throw new FaxDropError("File too big", 400, "bad_request", "Compress to <10MB.");
       });
       const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
@@ -90,7 +90,7 @@ describe("Middleware", () => {
     });
 
     it("re-throws non-FaxDrop errors unchanged", async () => {
-      const handler = jest.fn(async () => {
+      const handler = vi.fn(async () => {
         throw new Error("unexpected");
       });
       const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
@@ -99,7 +99,7 @@ describe("Middleware", () => {
 
     it("dry-run wouldCallWith redacts sensitive args", async () => {
       process.env.FAXDROP_MCP_DRY_RUN = "true";
-      const handler = jest.fn(async () => ({
+      const handler = vi.fn(async () => ({
         content: [{ type: "text" as const, text: "ok" }],
       }));
       const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
@@ -185,7 +185,7 @@ describe("Middleware", () => {
     });
 
     it("rejects relative paths and logs error", () => {
-      const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       process.env.FAXDROP_MCP_AUDIT_LOG = "relative/audit.log";
       logAudit("faxdrop_send_fax", {}, "ok");
       expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("must be an absolute path"));
@@ -193,7 +193,7 @@ describe("Middleware", () => {
     });
 
     it("does not throw when write fails (best-effort)", () => {
-      const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       process.env.FAXDROP_MCP_AUDIT_LOG = "/nonexistent-dir-faxdrop-test/audit.log";
       expect(() => logAudit("faxdrop_send_fax", {}, "error")).not.toThrow();
       expect(errSpy).toHaveBeenCalledWith(
@@ -219,7 +219,7 @@ describe("Middleware", () => {
 
     it("logs an 'ok' audit entry on a successful write call", async () => {
       process.env.FAXDROP_MCP_AUDIT_LOG = auditPath;
-      const handler = jest.fn(async () => ({
+      const handler = vi.fn(async () => ({
         content: [{ type: "text" as const, text: "sent" }],
       }));
       const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
@@ -230,7 +230,7 @@ describe("Middleware", () => {
     });
 
     it("surfaces FaxDropError.hint for non-402, non-429 statuses", async () => {
-      const handler = jest.fn(async () => {
+      const handler = vi.fn(async () => {
         throw new FaxDropError("Bad input", 400, "bad_request", "Recheck the file extension");
       });
       const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
@@ -241,7 +241,7 @@ describe("Middleware", () => {
     });
 
     it("surfaces no hint for non-402/429 errors without err.hint", async () => {
-      const handler = jest.fn(async () => {
+      const handler = vi.fn(async () => {
         throw new FaxDropError("Server error", 500, "internal_error");
       });
       const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
