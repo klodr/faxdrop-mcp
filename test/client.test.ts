@@ -16,7 +16,7 @@ function mockFetch(response: {
   body: unknown;
   headers?: Record<string, string>;
 }) {
-  global.fetch = jest.fn(async () => ({
+  global.fetch = vi.fn(async () => ({
     ok: response.ok,
     status: response.status,
     statusText: response.statusText ?? (response.ok ? "OK" : "Error"),

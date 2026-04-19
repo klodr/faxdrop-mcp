@@ -42,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ["18", "20", "22"]
+        node: ["20", "22", "24"]
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
@@ -60,7 +60,7 @@ jobs:
         run: npm run build
 
       - name: Test with coverage
-        run: npm test -- --coverage
+        run: npm run test:coverage
 
       - name: Upload coverage to Codecov
         if: matrix.node == '20'

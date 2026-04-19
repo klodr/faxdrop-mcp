@@ -4,6 +4,8 @@
 
 [![CI](https://github.com/klodr/faxdrop-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/klodr/faxdrop-mcp/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/klodr/faxdrop-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/klodr/faxdrop-mcp/actions/workflows/codeql.yml)
+[![Tested with Vitest](https://img.shields.io/badge/tested%20with-vitest-yellow?logo=vitest&labelColor=black)](https://vitest.dev)
+[![codecov](https://codecov.io/gh/klodr/faxdrop-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/klodr/faxdrop-mcp)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/klodr/faxdrop-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/klodr/faxdrop-mcp)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12578/badge)](https://www.bestpractices.dev/projects/12578)
 [![Socket Security](https://socket.dev/api/badge/npm/package/faxdrop-mcp)](https://socket.dev/npm/package/faxdrop-mcp)
@@ -11,7 +13,7 @@
 [![npm version](https://img.shields.io/npm/v/faxdrop-mcp.svg)](https://www.npmjs.com/package/faxdrop-mcp)
 [![Node.js Version](https://img.shields.io/node/v/faxdrop-mcp.svg)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![MCP](https://img.shields.io/badge/MCP-1.25-blue)](https://modelcontextprotocol.io)
+[![MCP](https://img.shields.io/badge/MCP-1.29-blue)](https://modelcontextprotocol.io)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/klodr/faxdrop-mcp/pulls)
 
 A Model Context Protocol (MCP) server that lets AI assistants (Claude, Cursor, Continue, OpenClaw…) send real faxes through the [FaxDrop API](https://www.faxdrop.com/for-developers).
