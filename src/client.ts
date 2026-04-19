@@ -179,7 +179,7 @@ export class FaxDropClient {
     });
 
     const text = await res.text();
-    let json: unknown = undefined;
+    let json: unknown;
     try {
       json = text ? JSON.parse(text) : undefined;
     } catch {

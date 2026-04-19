@@ -16,6 +16,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `eslint.config.js`, native since 20.11), the CI matrix is `[20, 22, 24]`,
   and tsup target is `node20`. Symmetric to klodr/mercury-invoicing-mcp v0.8.0.
 
+### Changed
+
+- **Major dep bumps**:
+  - `zod` 3.25 → **4.3.6** (`z.string().uuid()` is now strict v1-v8;
+    no fake UUIDs in fax tests to migrate). MCP SDK 1.29 already supports
+    `^3.25 || ^4.0`.
+  - `typescript` 5.7 → **6.0.3**.
+  - `eslint` 9.39 → **10.2.1** + `@eslint/js` 9.39 → **10.0.1**. The new
+    `no-useless-assignment` rule flagged a redundant `let json: unknown =
+    undefined` in `src/client.ts:182` (now `let json: unknown;`).
+  - `@types/node` 22 → **20.19.0** (matches `engines.node >=20.11`).
+- **Minor dep bumps**: `@modelcontextprotocol/sdk` 1.25 → **1.29.0**,
+  `tsup` 8.3 → **8.5.1**.
+- TypeScript target ES2022 → **ES2023** (Node 20 supports it natively).
+
 ## [0.1.9] - 2026-04-19
 
 ### Fixed
