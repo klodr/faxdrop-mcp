@@ -239,6 +239,29 @@ describe("phone-gate", () => {
       const raw = readFileSync(join(stateDir, "paired.json"), "utf8");
       expect(JSON.parse(raw)).toEqual(["+12125551234"]);
     });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- inline import for test isolation
+    const { chmodSync } = require("node:fs") as typeof import("node:fs");
+    it("does NOT pair the number in memory if the disk write fails (transactional)", () => {
+      // Pair one number successfully (cache is warm + pairedLoaded=true).
+      pairNumber("+12125551234");
+      // Strip write perms on the state dir → writeFileSync(tmp) raises EACCES.
+      // The new number must NOT appear in isPaired() — pairing in memory while
+      // the file write failed would cause the next process restart to silently
+      // undo the addition.
+      chmodSync(stateDir, 0o500);
+      try {
+        expect(() => pairNumber("+13105551111")).toThrow();
+        expect(isPaired("+13105551111")).toBe(false);
+        // The previously paired number is unaffected.
+        expect(isPaired("+12125551234")).toBe(true);
+      } finally {
+        chmodSync(stateDir, 0o700);
+      }
+      // Disk state matches in-memory state: only the original number persisted.
+      expect(JSON.parse(readFileSync(join(stateDir, "paired.json"), "utf8"))).toEqual([
+        "+12125551234",
+      ]);
+    });
   });
 
   describe("validateAll (full 3-layer pipeline)", () => {

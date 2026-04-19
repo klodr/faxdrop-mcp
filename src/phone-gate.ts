@@ -236,15 +236,21 @@ export function pairNumber(e164: string): void {
     );
   }
   if (set.has(e164)) return;
-  set.add(e164);
+  // Build a snapshot rather than mutating the live cache: if writeFileSync /
+  // renameSync throws, the in-memory allow-list must NOT carry the addition
+  // (otherwise the number is paired in this process but absent from disk —
+  // a divergence the next process restart would silently undo).
+  const next = new Set(set);
+  next.add(e164);
   const file = getPairedFile();
   // mkdir mode 0o700 so the dir itself is owner-only. Concurrent writers get
   // unique tmp names (pid + uuid) — fixed `${file}.tmp` would let two
   // pairNumber calls clobber each other's tmp before the rename.
   mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
   const tmp = `${file}.${process.pid}.${randomUUID()}.tmp`;
-  writeFileSync(tmp, JSON.stringify([...set].sort()), { mode: 0o600 });
+  writeFileSync(tmp, JSON.stringify([...next].sort()), { mode: 0o600 });
   renameSync(tmp, file);
+  pairedCache = next;
 }
 
 export interface GatePass {

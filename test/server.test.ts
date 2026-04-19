@@ -220,7 +220,17 @@ describe("Tools wired through the server", () => {
   });
 
   it("faxdrop_get_fax_status short-circuits on a previously-cached terminal status", async () => {
-    mockJsonResponse({ id: "fax_zzz", status: "delivered", pages: 4 });
+    // Use a spy (not the plain mockJsonResponse helper) so we can prove the
+    // 2nd call truly bypassed fetch — without that assertion, a regression
+    // that re-queried FaxDrop and *then* annotated `_cached` would still pass.
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      text: async () => JSON.stringify({ id: "fax_zzz", status: "delivered", pages: 4 }),
+      headers: { get: () => null },
+    }));
+    global.fetch = fetchSpy as unknown as typeof fetch;
     // First call: hits FaxDrop (mock), result cached because status is terminal.
     const first = (await callTool("faxdrop_get_fax_status", { faxId: "fax_zzz" })) as {
       content: { type: string; text: string }[];
@@ -228,8 +238,8 @@ describe("Tools wired through the server", () => {
     };
     expect(first.structuredContent).toMatchObject({ status: "delivered", pages: 4 });
     expect(first.structuredContent).not.toHaveProperty("_cached");
-    // Second call: short-circuit, never reaches FaxDrop. We can verify the
-    // _cached marker is set; the cache was already populated by call #1.
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    // Second call: short-circuit — fetch must NOT be called again.
     const second = (await callTool("faxdrop_get_fax_status", { faxId: "fax_zzz" })) as {
       content: { type: string; text: string }[];
       structuredContent?: Record<string, unknown>;
@@ -239,5 +249,6 @@ describe("Tools wired through the server", () => {
       pages: 4,
       _cached: true,
     });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });

@@ -87,14 +87,14 @@ the maintainer commits to, and limits that callers must account for.
   `recipientNumber`, status messages, and any error body as text fields in
   the tool response. If a malicious user has previously caused a fax to
   enter your account (e.g. via a number they own), instructions placed in
-  those fields are forwarded verbatim to the LLM. More importantly, the
-  cover-page fields you submit (`coverNote`, `recipientName`, `subject`,
-  `senderCompany`, `senderPhone`) round-trip through `faxdrop_get_fax_status`
-  in some response shapes — content originally drafted by an upstream agent
-  can re-enter the LLM context as "trusted" tool output. The MCP forwards
-  bytes verbatim and does not sanitize. Treat all fax-status response data
-  as untrusted; never auto-execute a follow-up `faxdrop_send_fax` based on
-  fields read from a status response without explicit user confirmation.
+  those fields reach the LLM. More importantly, the cover-page fields you
+  submit (`coverNote`, `recipientName`, `subject`, `senderCompany`,
+  `senderPhone`) round-trip through `faxdrop_get_fax_status` in some
+  response shapes — content originally drafted by an upstream agent can
+  re-enter the LLM context as "trusted" tool output. `content[0].text`
+  is sanitized + fenced; never auto-execute a follow-up
+  `faxdrop_send_fax` based on fields read from a status response without
+  explicit user confirmation.
 - **Account-level FaxDrop security**: 2FA, billing, fraud detection, key
   rotation are FaxDrop's responsibility, not this MCP's.
 - **Network-level attackers** beyond what TLS provides: this MCP relies on
