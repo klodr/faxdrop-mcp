@@ -1,11 +1,4 @@
-import {
-  existsSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -272,12 +265,8 @@ describe("phone-gate", () => {
         JSON.stringify(["+12125551234", "+19998887777"]),
       );
       pairNumber("+13105551111"); // our pair
-      const onDisk = JSON.parse(
-        readFileSync(join(stateDir, "paired.json"), "utf8"),
-      ) as string[];
-      expect(onDisk).toEqual(
-        ["+12125551234", "+13105551111", "+19998887777"].sort(),
-      );
+      const onDisk = JSON.parse(readFileSync(join(stateDir, "paired.json"), "utf8")) as string[];
+      expect(onDisk).toEqual(["+12125551234", "+13105551111", "+19998887777"].sort());
     });
     itPosix("does NOT pair the number in memory if the disk write fails (transactional)", () => {
       // Pair one number successfully (cache is warm + pairedLoaded=true).
