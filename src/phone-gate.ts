@@ -87,9 +87,12 @@ function parseList<T extends string>(
   fallback: readonly T[],
 ): readonly T[] {
   if (!env) return fallback;
+  // Always uppercase: libphonenumber NumberType and CountryCode are both
+  // uppercase. Lowercase env input (e.g. `fixed_line,voip`) used to silently
+  // miss every comparison.
   const items = env
     .split(",")
-    .map((s) => s.trim())
+    .map((s) => s.trim().toUpperCase())
     .filter((s) => s.length > 0);
   return items.length > 0 ? (items as T[]) : fallback;
 }
@@ -99,13 +102,10 @@ export function getAllowedTypes(): readonly NumberType[] {
 }
 
 export function getAllowedCountries(): readonly CountryCode[] {
-  const raw = process.env.FAXDROP_MCP_ALLOWED_COUNTRIES;
-  if (!raw) return DEFAULT_ALLOWED_COUNTRIES;
-  const upper = raw
-    .split(",")
-    .map((s) => s.trim().toUpperCase())
-    .filter((s) => s.length > 0);
-  return upper.length > 0 ? (upper as CountryCode[]) : DEFAULT_ALLOWED_COUNTRIES;
+  return parseList<CountryCode>(
+    process.env.FAXDROP_MCP_ALLOWED_COUNTRIES,
+    DEFAULT_ALLOWED_COUNTRIES,
+  );
 }
 
 // --- validation result ---

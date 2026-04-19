@@ -1,4 +1,12 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -76,6 +84,10 @@ describe("phone-gate", () => {
     it("env override (types)", () => {
       process.env.FAXDROP_MCP_ALLOWED_TYPES = "FIXED_LINE, MOBILE";
       expect(getAllowedTypes()).toEqual(["FIXED_LINE", "MOBILE"]);
+    });
+    it("env override (types) is upper-cased — lowercase input still matches libphonenumber", () => {
+      process.env.FAXDROP_MCP_ALLOWED_TYPES = "fixed_line, voip";
+      expect(getAllowedTypes()).toEqual(["FIXED_LINE", "VOIP"]);
     });
     it("empty env value falls back to defaults", () => {
       process.env.FAXDROP_MCP_ALLOWED_COUNTRIES = " , ,";
@@ -221,11 +233,8 @@ describe("phone-gate", () => {
       // Pre-create the file with content the load can't read (mode 0).
       const file = join(stateDir, "paired.json");
       writeFileSync(file, JSON.stringify(["+18005551212"]));
-      // chmod 0 → readFileSync raises EACCES.
-      // (skipped: chmod imported separately at the test top — inline here.)
       const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-      // eslint-disable-next-line @typescript-eslint/no-require-imports -- inline import for test isolation
-      const { chmodSync } = require("node:fs") as typeof import("node:fs");
+      // chmod 0 → readFileSync raises EACCES.
       chmodSync(file, 0o000);
       try {
         // First isPaired triggers loadPaired → EACCES → pairedLoaded stays false.
@@ -246,8 +255,6 @@ describe("phone-gate", () => {
       const raw = readFileSync(join(stateDir, "paired.json"), "utf8");
       expect(JSON.parse(raw)).toEqual(["+12125551234"]);
     });
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- inline import for test isolation
-    const { chmodSync } = require("node:fs") as typeof import("node:fs");
     it("removes the .lock file after a successful pair", () => {
       pairNumber("+12125551234");
       const lockFile = join(stateDir, "paired.json.lock");
