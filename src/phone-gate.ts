@@ -140,23 +140,26 @@ export function validateTypeAndCountry(input: string): GateResult {
     return { ok: false, layer: "parse", reason: "Cannot parse phone number" };
   }
   if (!phone.isValid()) {
-    return { ok: false, layer: "parse", reason: `Invalid phone number: ${input}` };
+    return { ok: false, layer: "parse", reason: "Invalid phone number" };
   }
   if (!phone.country) {
     return {
       ok: false,
       layer: "country",
-      reason: "Cannot determine country from number",
+      reason: "Country not allowed",
     };
   }
   const type = phone.getType();
   const allowedTypes = getAllowedTypes();
   if (!type || !allowedTypes.includes(type)) {
+    // Don't leak ALLOWED_TYPES list or the env var name to the LLM-facing
+    // text — an attacker with prompt-injection access could use the hint to
+    // probe / nudge the user toward loosening the gate. Operators see the
+    // policy via env vars; callers see only the gate decision.
     return {
       ok: false,
       layer: "type",
-      reason: `Phone type '${type ?? "unknown"}' is not allowed`,
-      hint: `Allowed types: ${allowedTypes.join(", ")}. Override via FAXDROP_MCP_ALLOWED_TYPES.`,
+      reason: "Phone number type not allowed",
     };
   }
   const allowedCountries = getAllowedCountries();
@@ -164,8 +167,7 @@ export function validateTypeAndCountry(input: string): GateResult {
     return {
       ok: false,
       layer: "country",
-      reason: `Country '${phone.country}' is not allowed`,
-      hint: `Allowed countries: ${allowedCountries.join(", ")}. Override via FAXDROP_MCP_ALLOWED_COUNTRIES.`,
+      reason: "Country not allowed",
     };
   }
   return {
