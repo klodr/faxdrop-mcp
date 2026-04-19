@@ -1,11 +1,39 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z, ZodRawShape } from "zod";
 import { wrapToolHandler, type ToolResult } from "../middleware.js";
+import { sanitizeForLlm } from "../sanitize.js";
 
 export type { ToolResult };
 
+function asStructured(data: unknown): Record<string, unknown> {
+  // structuredContent must be a JSON object (per MCP spec). Wrap primitives
+  // and arrays in `{ value: ... }` so the field is always present and the
+  // shape is consistent.
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    return data as Record<string, unknown>;
+  }
+  return { value: data };
+}
+
+// JSON.stringify(undefined) returns undefined (not a string) — sanitizeForLlm
+// would then crash on .replace(). Coerce to a JSON-valid representation.
+function jsonText(data: unknown): string {
+  return JSON.stringify(data, null, 2) ?? "null";
+}
+
 export function textResult(data: unknown): ToolResult {
-  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+  return {
+    content: [{ type: "text", text: sanitizeForLlm(jsonText(data)) }],
+    structuredContent: asStructured(data),
+  };
+}
+
+export function errorResult(data: unknown): ToolResult {
+  return {
+    content: [{ type: "text", text: sanitizeForLlm(jsonText(data)) }],
+    structuredContent: asStructured(data),
+    isError: true,
+  };
 }
 
 export function defineTool<S extends ZodRawShape>(
