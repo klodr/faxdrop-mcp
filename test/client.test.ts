@@ -209,6 +209,67 @@ describe("FaxDropClient", () => {
       expect((err as FaxDropError).retryAfter).toBe(42);
     }
   });
+
+  it("uses retry_after from body when present (preferred over header)", async () => {
+    mockFetch({
+      ok: false,
+      status: 429,
+      statusText: "Too Many Requests",
+      body: { error: "Slow down", error_type: "rate_limited", retry_after: 17 },
+      headers: { "retry-after": "999" },
+    });
+    const client = new FaxDropClient({ apiKey: "k" });
+    try {
+      await client.getFaxStatus("fax_abc");
+      fail("Expected FaxDropError");
+    } catch (err) {
+      expect((err as FaxDropError).retryAfter).toBe(17);
+    }
+  });
+
+  it("returns { ok: true } when the response body is empty (e.g. 200 with no payload)", async () => {
+    global.fetch = (async () => ({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      text: async () => "",
+      headers: { get: () => null },
+    })) as unknown as typeof fetch;
+    const client = new FaxDropClient({ apiKey: "k" });
+    const result = await client.getFaxStatus("fax_abc");
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("sendFax forwards every optional cover-page field when set", async () => {
+    let capturedInit: RequestInit | undefined;
+    global.fetch = (async (_url: URL | string, init?: RequestInit) => {
+      capturedInit = init;
+      return {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () => JSON.stringify({ success: true, faxId: "fax_full" }),
+        headers: { get: () => null },
+      };
+    }) as unknown as typeof fetch;
+
+    const client = new FaxDropClient({ apiKey: "k" });
+    await client.sendFax({
+      filePath: pdfPath,
+      recipientNumber: "+12125551234",
+      senderName: "X",
+      senderEmail: "x@y.com",
+      recipientName: "Dr. Smith",
+      subject: "Lab results",
+      senderCompany: "Acme Co",
+      senderPhone: "+12125550000",
+    });
+    const fd = capturedInit?.body as FormData;
+    expect(fd.get("recipientName")).toBe("Dr. Smith");
+    expect(fd.get("subject")).toBe("Lab results");
+    expect(fd.get("senderCompany")).toBe("Acme Co");
+    expect(fd.get("senderPhone")).toBe("+12125550000");
+  });
 });
 
 describe("FaxDropClient — non-JSON response handling", () => {
