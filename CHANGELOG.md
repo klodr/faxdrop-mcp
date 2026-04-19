@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.9] - 2026-04-19
 
+### Fixed
+
+- `.github/workflows/verify-release.yml` — drop `--signer-workflow` from
+  `gh attestation verify` (Path 2). The current `gh` CLI rejects the
+  combination with `--cert-identity` (mutually exclusive flag group);
+  `--cert-identity` is strictly more specific (encodes both the workflow
+  path and the tag ref in the Fulcio SAN), so we keep it and drop
+  `--signer-workflow`. Symmetric to klodr/mercury-invoicing-mcp PR #36.
+
 ### Changed
 
 - `verify-release.yml` cleanup symmetric to klodr/mercury-invoicing-mcp PR #34:
