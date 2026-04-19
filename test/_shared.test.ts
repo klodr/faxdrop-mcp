@@ -28,6 +28,11 @@ describe("_shared helpers", () => {
       expect(r.structuredContent).toEqual({ value: null });
     });
 
+    it("wraps undefined in { value } (parallel to the null case)", () => {
+      const r = textResult(undefined);
+      expect(r.structuredContent).toEqual({ value: undefined });
+    });
+
     it("errorResult sets isError + same structuredContent shape", () => {
       const r = errorResult({ error_type: "bad_request", message: "boom" });
       expect(r.isError).toBe(true);

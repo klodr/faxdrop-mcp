@@ -15,16 +15,22 @@ function asStructured(data: unknown): Record<string, unknown> {
   return { value: data };
 }
 
+// JSON.stringify(undefined) returns undefined (not a string) — sanitizeForLlm
+// would then crash on .replace(). Coerce to a JSON-valid representation.
+function jsonText(data: unknown): string {
+  return JSON.stringify(data, null, 2) ?? "null";
+}
+
 export function textResult(data: unknown): ToolResult {
   return {
-    content: [{ type: "text", text: sanitizeForLlm(JSON.stringify(data, null, 2)) }],
+    content: [{ type: "text", text: sanitizeForLlm(jsonText(data)) }],
     structuredContent: asStructured(data),
   };
 }
 
 export function errorResult(data: unknown): ToolResult {
   return {
-    content: [{ type: "text", text: sanitizeForLlm(JSON.stringify(data, null, 2)) }],
+    content: [{ type: "text", text: sanitizeForLlm(jsonText(data)) }],
     structuredContent: asStructured(data),
     isError: true,
   };
