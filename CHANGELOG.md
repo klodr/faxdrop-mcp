@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-19
+
 ### Added
 
 - **File-path jail (`FAXDROP_MCP_WORK_DIR`)**: every uploaded document
