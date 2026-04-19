@@ -11,10 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### BREAKING
 
-- **Drop Node 18.** Minimum runtime is now Node 20 (Node 18 is past EOL).
-  `engines.node` is `>=20.11` (we use `import.meta.dirname` in
-  `eslint.config.js`, native since 20.11), the CI matrix is `[20, 22, 24]`,
-  and tsup target is `node20`. Symmetric to klodr/mercury-invoicing-mcp v0.8.0.
+- **Drop Node 18.** Minimum runtime is now **Node 20.11+** (Node 18 is past
+  EOL; the 20.11 floor is required by `import.meta.dirname` in
+  `eslint.config.js`). `engines.node` is `>=20.11`, the CI matrix is
+  `[20, 22, 24]`, and tsup target is `node20`. Symmetric to
+  klodr/mercury-invoicing-mcp v0.8.0.
 
 ### Changed
 
