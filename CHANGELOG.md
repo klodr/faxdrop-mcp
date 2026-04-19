@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Tests
+
+- `test/client.test.ts`: 3 new cases that bring coverage from 97.76%
+  → 99.25% statements (+1.49pp) and 87.20% → 95.34% branches (+8.14pp)
+  on the post-vitest baseline:
+  - `retry_after` in error body (number) takes precedence over the
+    `Retry-After` header.
+  - 200 OK with empty response body returns the `{ ok: true }` sentinel.
+  - `sendFax` forwards every optional cover-page field (`recipientName`,
+    `subject`, `senderCompany`, `senderPhone`).
+
 ## [0.2.0] - 2026-04-19
 
 ### BREAKING
