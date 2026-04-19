@@ -1,4 +1,11 @@
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, statSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -175,7 +182,14 @@ describe("phone-gate", () => {
   });
 
   describe("paired.json storage", () => {
-    it("writes mode 0o600", () => {
+    // POSIX-only: chmodSync + statSync().mode are unreliable on Windows
+    // (libuv only toggles the read-only attribute; mode bits are fabricated).
+    // The hardening behaviors themselves still work on Windows, but the tests
+    // that depend on enforced mode bits / EACCES from chmod can't validate
+    // them there.
+    const itPosix = process.platform === "win32" ? it.skip : it;
+
+    itPosix("writes mode 0o600", () => {
       pairNumber("+12125551234");
       const stat = statSync(join(stateDir, "paired.json"));
       expect(stat.mode & 0o777).toBe(0o600);
@@ -210,7 +224,7 @@ describe("phone-gate", () => {
       expect(() => pairNumber("+12125551234")).toThrow(/must be an absolute path/);
     });
 
-    it("refuses to write paired.json when the prior read failed (no clobber)", () => {
+    itPosix("refuses to write paired.json when the prior read failed (no clobber)", () => {
       // Pre-create the file with content the load can't read (mode 0).
       const file = join(stateDir, "paired.json");
       writeFileSync(file, JSON.stringify(["+18005551212"]));
@@ -241,7 +255,31 @@ describe("phone-gate", () => {
     });
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- inline import for test isolation
     const { chmodSync } = require("node:fs") as typeof import("node:fs");
-    it("does NOT pair the number in memory if the disk write fails (transactional)", () => {
+    it("removes the .lock file after a successful pair", () => {
+      pairNumber("+12125551234");
+      const lockFile = join(stateDir, "paired.json.lock");
+      expect(existsSync(lockFile)).toBe(false);
+    });
+    it("merges concurrent on-disk additions instead of clobbering them", () => {
+      // Simulate a peer process that paired a different number AFTER our
+      // loadPaired() but BEFORE our rename. The merge-under-lock must
+      // preserve both, not just our snapshot.
+      pairNumber("+12125551234");
+      _resetPairedCache();
+      // Peer writes a new number directly to disk (between our load and write):
+      writeFileSync(
+        join(stateDir, "paired.json"),
+        JSON.stringify(["+12125551234", "+19998887777"]),
+      );
+      pairNumber("+13105551111"); // our pair
+      const onDisk = JSON.parse(
+        readFileSync(join(stateDir, "paired.json"), "utf8"),
+      ) as string[];
+      expect(onDisk).toEqual(
+        ["+12125551234", "+13105551111", "+19998887777"].sort(),
+      );
+    });
+    itPosix("does NOT pair the number in memory if the disk write fails (transactional)", () => {
       // Pair one number successfully (cache is warm + pairedLoaded=true).
       pairNumber("+12125551234");
       // Strip write perms on the state dir → writeFileSync(tmp) raises EACCES.

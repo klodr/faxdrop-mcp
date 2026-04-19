@@ -20,7 +20,16 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import {
+  closeSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join } from "node:path";
 import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js/max";
@@ -222,9 +231,66 @@ export function isPaired(e164: string): boolean {
 }
 
 /**
+ * Acquire an exclusive lock on `lockPath` via O_EXCL+O_CREAT. Spins with
+ * a small busy-wait (pairing is rare; no event loop yield needed). Stale
+ * locks older than `staleMs` are reclaimed (covers a process that crashed
+ * mid-write without releasing).
+ */
+function acquireLock(lockPath: string, timeoutMs = 3000, staleMs = 30_000): number {
+  const start = Date.now();
+  while (true) {
+    try {
+      // wx = O_WRONLY | O_CREAT | O_EXCL — atomic create-or-fail.
+      return openSync(lockPath, "wx", 0o600);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+      // Stale lock recovery: a previous process may have crashed mid-write.
+      try {
+        const age = Date.now() - statSync(lockPath).mtimeMs;
+        if (age > staleMs) {
+          unlinkSync(lockPath);
+          continue;
+        }
+      } catch {
+        /* race: another process released between stat and unlink — retry */
+      }
+      if (Date.now() - start > timeoutMs) {
+        throw new Error(
+          `pair-number lock timeout after ${timeoutMs}ms (${lockPath}); another MCP instance may be hung`,
+          { cause: err },
+        );
+      }
+      // Busy-wait ~25ms (no setTimeout — pairNumber is sync).
+      const wakeAt = Date.now() + 25;
+      while (Date.now() < wakeAt) {
+        /* spin */
+      }
+    }
+  }
+}
+
+function releaseLock(lockPath: string, fd: number): void {
+  try {
+    closeSync(fd);
+  } catch {
+    /* already closed */
+  }
+  try {
+    unlinkSync(lockPath);
+  } catch {
+    /* already removed */
+  }
+}
+
+/**
  * Add a number to paired.json (mode 0o600, atomic via rename).
  * Caller must have already passed validateTypeAndCountry — this function
  * does NOT re-validate (no bypass-by-pair).
+ *
+ * Cross-process safe: takes an O_EXCL lock on `paired.json.lock`, then
+ * re-reads the on-disk state under the lock (so a second MCP that paired
+ * a different number between our loadPaired() and the rename does NOT
+ * get clobbered), unions, writes, renames, releases.
  */
 export function pairNumber(e164: string): void {
   const set = loadPaired();
@@ -236,21 +302,37 @@ export function pairNumber(e164: string): void {
     );
   }
   if (set.has(e164)) return;
-  // Build a snapshot rather than mutating the live cache: if writeFileSync /
-  // renameSync throws, the in-memory allow-list must NOT carry the addition
-  // (otherwise the number is paired in this process but absent from disk —
-  // a divergence the next process restart would silently undo).
-  const next = new Set(set);
-  next.add(e164);
+
   const file = getPairedFile();
-  // mkdir mode 0o700 so the dir itself is owner-only. Concurrent writers get
-  // unique tmp names (pid + uuid) — fixed `${file}.tmp` would let two
-  // pairNumber calls clobber each other's tmp before the rename.
+  // mkdir mode 0o700 so the dir itself is owner-only.
   mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
-  const tmp = `${file}.${process.pid}.${randomUUID()}.tmp`;
-  writeFileSync(tmp, JSON.stringify([...next].sort()), { mode: 0o600 });
-  renameSync(tmp, file);
-  pairedCache = next;
+
+  const lockPath = `${file}.lock`;
+  const lockFd = acquireLock(lockPath);
+  try {
+    // Re-read NOW (under the lock) so a peer process that paired a different
+    // number between our loadPaired() and this point isn't dropped on rename.
+    let onDisk: string[] = [];
+    try {
+      const raw = readFileSync(file, "utf8");
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed) && parsed.every((x) => typeof x === "string")) {
+        onDisk = parsed;
+      }
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    }
+
+    // Build a snapshot (live cache is mutated only after rename succeeds —
+    // otherwise the in-memory allow-list would diverge from disk on failure).
+    const next = new Set<string>([...onDisk, ...set, e164]);
+    const tmp = `${file}.${process.pid}.${randomUUID()}.tmp`;
+    writeFileSync(tmp, JSON.stringify([...next].sort()), { mode: 0o600 });
+    renameSync(tmp, file);
+    pairedCache = next;
+  } finally {
+    releaseLock(lockPath, lockFd);
+  }
 }
 
 export interface GatePass {
