@@ -7,6 +7,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **File-path jail (`FAXDROP_MCP_WORK_DIR`)**: every uploaded document
+  must live inside an outbox directory (default `~/FaxOutbox/`,
+  auto-created mode `0o700`). After realpath canonicalization, paths
+  outside the outbox are rejected with `error_type: "bad_request"`.
+  Replaces the would-be dotdir block + Keychains carve-out + ad-hoc
+  blocklists with a single positive constraint. Override with an
+  absolute path via `FAXDROP_MCP_WORK_DIR=/abs/path`.
+- **Symlink hardening on `filePath`**: leaf symlinks are rejected at
+  `lstat` (the actual attack vector — `safe.pdf → /etc/passwd`), the
+  canonical path is resolved via `realpath` (parent-component symlinks
+  tolerated for setups like macOS `/var → /private/var` or
+  `~/work → /Volumes/External`), and the open passes `O_NOFOLLOW` as a
+  TOCTOU barrier in case a leaf symlink sneaks in between the lstat
+  and the open.
+- **Output sanitization** (`src/sanitize.ts`): every tool response
+  text is stripped of ASCII/Unicode control characters and zero-width
+  formatters (BiDi overrides, ZWSP, ZWJ, BOM, …) and wrapped in
+  `<untrusted-tool-output>…</untrusted-tool-output>` fences before
+  reaching the LLM. Defense in depth against prompt injection through
+  FaxDrop response fields the caller (or upstream) may have crafted.
+- **`structuredContent` on every response** (per MCP spec 2025-06-18+):
+  alongside the fenced text in `content[0].text`, tool results now
+  carry the raw JSON payload as `structuredContent`. Programmatic
+  consumers parse the structured field; the fenced text is for safe
+  LLM display only.
+- **Discard non-JSON responses from FaxDrop** (`src/client.ts`):
+  FaxDrop's API always returns JSON; a non-JSON body (HTML 5xx page,
+  proxy interception, incident page) is now thrown as
+  `error_type: "invalid_response"` with the body discarded — never
+  forwarded to the LLM. Closes a prompt-injection vector where an
+  upstream HTML payload could re-enter the agent context.
+- **Anti-poll-storm cache** (`src/status-cache.ts`): terminal statuses
+  (`delivered`, `failed`, `partial`) are cached process-wide (LRU,
+  100 entries max). Subsequent `faxdrop_get_fax_status` calls for the
+  same `faxId` short-circuit and return the cached payload with a
+  `_cached: true` marker, sparing FaxDrop quota when LLMs re-poll a
+  finished fax. Tool description updated with the recommended polling
+  cadence (every 5s for the first 2 min, then every 30s for up to
+  10 min, stop on terminal status).
+- **3-layer phone-number gate on `recipientNumber`** (new module
+  `src/phone-gate.ts`). Every call to `faxdrop_send_fax` now passes
+  three successive blocking layers before the fax is dispatched:
+  1. **TYPE** — number must be one of `FIXED_LINE`,
+     `FIXED_LINE_OR_MOBILE`, `VOIP`, `TOLL_FREE` (env override
+     `FAXDROP_MCP_ALLOWED_TYPES`).
+  2. **COUNTRY** — number's country must be in `US`, `CA`, `PR`, `GU`,
+     `VI`, `AS`, `MP` (env override `FAXDROP_MCP_ALLOWED_COUNTRIES`).
+  3. **GATE** — per-number policy via `FAXDROP_MCP_NUMBER_GATE`
+     (default **`pairing`** — secure-with-HITL by default):
+       - `open` — any number that passed 1+2 is allowed.
+       - `pairing` — only numbers in `~/.faxdrop-mcp/paired.json` are
+         allowed; new numbers can be added via the new
+         `faxdrop_pair_number` tool (still subject to layers 1+2).
+       - `closed` — only numbers in `paired.json`; runtime pairing is
+         disabled (file edited out-of-band only).
+  Layers 1 and 2 are immutable at runtime — no per-call approval can
+  bypass them. Powered by `libphonenumber-js/max` for accurate type
+  detection. State file: `~/.faxdrop-mcp/paired.json` (mode `0o600`,
+  atomic write via rename), overridable via `FAXDROP_MCP_STATE_DIR`.
+- **New tool** `faxdrop_pair_number` — adds a number to the paired
+  whitelist when `FAXDROP_MCP_NUMBER_GATE=pairing`. Errors out with
+  `pair_disabled` in `closed` and `open` modes.
+
+### Changed
+
+- `package.json`: add `libphonenumber-js@^1.12.41` as a runtime
+  dependency.
+
 ## [0.2.0] - 2026-04-19
 
 ### BREAKING
