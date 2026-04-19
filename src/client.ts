@@ -1,10 +1,11 @@
 /**
- * FaxDrop API client
+ * FaxDrop API client — pure HTTP wrapper.
+ *
+ * Filesystem-touching code (path validation, symlink hardening, outbox
+ * jail, chunked-read with size cap) lives in `src/file-io.ts`. This
+ * client takes already-opened bytes and pushes them to FaxDrop.
  * Docs: https://www.faxdrop.com/for-developers
  */
-
-import { open } from "node:fs/promises";
-import { basename, isAbsolute, resolve } from "node:path";
 
 const BASE_URL = "https://www.faxdrop.com";
 
@@ -14,8 +15,12 @@ export interface FaxDropClientOptions {
 }
 
 export interface SendFaxArgs {
-  /** Absolute path to the file to fax (PDF, DOCX, JPEG, or PNG, ≤10MB). */
-  filePath: string;
+  /** File contents (already validated + size-capped by the caller). */
+  fileBytes: Buffer;
+  /** Filename to advertise in the multipart body (basename only, no path). */
+  filename: string;
+  /** MIME type derived from the file extension. */
+  mimeType: string;
   /** Recipient fax number in international format (e.g. "+12125551234"). */
   recipientNumber: string;
   /** Sender display name. */
@@ -61,17 +66,6 @@ export class FaxDropError extends Error {
   }
 }
 
-const ALLOWED_EXTS = new Set([".pdf", ".docx", ".jpeg", ".jpg", ".png"]);
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
-
-const MIME_BY_EXT: Record<string, string> = {
-  ".pdf": "application/pdf",
-  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ".jpeg": "image/jpeg",
-  ".jpg": "image/jpeg",
-  ".png": "image/png",
-};
-
 export class FaxDropClient {
   private apiKey: string;
   private baseUrl: string;
@@ -83,64 +77,10 @@ export class FaxDropClient {
 
   /** POST /api/send-fax — multipart upload. */
   async sendFax(args: SendFaxArgs): Promise<unknown> {
-    if (!isAbsolute(args.filePath)) {
-      throw new FaxDropError(
-        `filePath must be absolute; got: ${args.filePath}`,
-        400,
-        "bad_request",
-        "Pass an absolute path like /Users/you/doc.pdf",
-      );
-    }
-    const path = resolve(args.filePath);
-    const ext = "." + (path.split(".").pop() ?? "").toLowerCase();
-    if (!ALLOWED_EXTS.has(ext)) {
-      throw new FaxDropError(
-        `Unsupported file type: ${ext || "(none)"}. Allowed: PDF, DOCX, JPEG, PNG.`,
-        400,
-        "bad_request",
-        "Convert the document to PDF first.",
-      );
-    }
-    const tooLarge = (size: number): FaxDropError =>
-      new FaxDropError(
-        `File too large: ${size} bytes (max ${MAX_FILE_BYTES}).`,
-        400,
-        "bad_request",
-        "Compress the file or split it across multiple faxes.",
-      );
-
-    // Pin the file descriptor: open() locks us to the inode at open time, so
-    // a swap of the path between syscalls can no longer cause us to read a
-    // different file than the one we size-checked. fh.stat() is a fast-path
-    // reject; the chunked read below enforces the cap continuously, so we
-    // never allocate more than MAX_FILE_BYTES + one chunk even if the file
-    // grows between stat() and the end of the read.
-    const fh = await open(path, "r");
-    let buf: Buffer;
-    try {
-      const info = await fh.stat();
-      if (info.size > MAX_FILE_BYTES) throw tooLarge(info.size);
-
-      const CHUNK = 64 * 1024;
-      const chunkBuf = Buffer.alloc(CHUNK);
-      const chunks: Buffer[] = [];
-      let total = 0;
-      while (true) {
-        const { bytesRead } = await fh.read(chunkBuf, 0, CHUNK);
-        if (bytesRead === 0) break;
-        total += bytesRead;
-        if (total > MAX_FILE_BYTES) throw tooLarge(total);
-        chunks.push(Buffer.from(chunkBuf.subarray(0, bytesRead)));
-      }
-      buf = Buffer.concat(chunks, total);
-    } finally {
-      await fh.close();
-    }
-
-    const blob = new Blob([new Uint8Array(buf)], { type: MIME_BY_EXT[ext] });
+    const blob = new Blob([new Uint8Array(args.fileBytes)], { type: args.mimeType });
 
     const form = new FormData();
-    form.set("file", blob, basename(path));
+    form.set("file", blob, args.filename);
     form.set("recipientNumber", args.recipientNumber);
     form.set("senderName", args.senderName);
     form.set("senderEmail", args.senderEmail);
@@ -180,10 +120,21 @@ export class FaxDropClient {
 
     const text = await res.text();
     let json: unknown;
-    try {
-      json = text ? JSON.parse(text) : undefined;
-    } catch {
-      json = text;
+    if (text) {
+      try {
+        json = JSON.parse(text);
+      } catch {
+        // Discard non-JSON responses entirely: FaxDrop's API always returns
+        // JSON (success and error), so non-JSON is a proxy interception, an
+        // upstream HTML error page, or a service incident. Surfacing the
+        // raw body would re-inject untrusted text into the LLM context.
+        throw new FaxDropError(
+          `FaxDrop API ${method} ${path} returned a non-JSON response (HTTP ${res.status})`,
+          res.status,
+          "invalid_response",
+          "FaxDrop returned an unexpected body (likely a proxy or incident page); body discarded for safety.",
+        );
+      }
     }
 
     if (!res.ok) {
