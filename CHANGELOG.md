@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-04-19
+
+### Tests
+
+- 5 new tests close coverage gaps left by the v0.3.0 hardening surface
+  (PR #30, merged into main):
+  - `isValidE164` — direct coverage of the public helper used by the
+    `senderPhone` Zod refine.
+  - `validateTypeAndCountry` parse paths — the `catch` branch (empty
+    input throws inside libphonenumber) and the `!phone.isValid()`
+    branch (`+10000000000` parses but `isValid()` returns false).
+  - `acquireLock` stale recovery — manually plant a lock file with
+    `mtime > 30s` and assert `pairNumber` reclaims it on the first
+    retry, finishing well under the 3s timeout.
+  - `acquireLock` timeout — hold a fresh lock from another fd;
+    `pairNumber` must throw `pair-number lock timeout` after the
+    full ~3s wait.
+- Coverage delta:
+  - statements 95.44 → **98.57**
+  - branches 91.87 → **94.92**
+  - functions 98.24 → **100**
+  - lines 95.61 → **99.05**
+
 ## [0.3.0] - 2026-04-19
 
 ### Added
