@@ -123,7 +123,10 @@ describe("phone-gate", () => {
       expect(r.ok).toBe(false);
       if (!r.ok) {
         expect(r.layer).toBe("type");
-        expect(r.reason).toContain("MOBILE");
+        // reason is intentionally generic — see SEC v0.3.2: don't leak the
+        // specific type or the env var name to the LLM-facing channel.
+        expect(r.reason).toBe("Phone number type not allowed");
+        expect(r.hint).toBeUndefined();
       }
     });
     it("accepts a US toll-free number (covered by TOLL_FREE)", () => {
@@ -142,7 +145,9 @@ describe("phone-gate", () => {
       expect(r.ok).toBe(false);
       if (!r.ok) {
         expect(r.layer).toBe("country");
-        expect(r.reason).toContain("FR");
+        // reason is intentionally generic — same SEC v0.3.2 rationale.
+        expect(r.reason).toBe("Country not allowed");
+        expect(r.hint).toBeUndefined();
       }
     });
     it("accepts CA with default countries", () => {

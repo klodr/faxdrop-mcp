@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-04-19
+
+### Security
+
+- **Phone-gate hints no longer leak the policy** to the LLM-facing
+  `content[0].text`. Previously a rejected number returned a `hint`
+  like `"Allowed countries: US. Override via FAXDROP_MCP_ALLOWED_COUNTRIES."`,
+  which exposed both the whitelist contents and the env-var name —
+  useful for an operator debugging interactively, but a usable
+  reconnaissance signal under prompt injection (an attacker LLM
+  learns the gate shape and the exact knob to ask the user to
+  loosen). The `reason` is now generic — `"Country not allowed"`,
+  `"Phone number type not allowed"` — and the `hint` field is
+  dropped entirely for layers TYPE and COUNTRY. Operators still see
+  the policy via env vars; callers see only the gate decision.
+
 ## [0.3.1] - 2026-04-19
 
 ### Tests
