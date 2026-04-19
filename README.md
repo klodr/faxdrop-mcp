@@ -11,6 +11,7 @@
 [![Socket Security](https://socket.dev/api/badge/npm/package/faxdrop-mcp)](https://socket.dev/npm/package/faxdrop-mcp)
 
 [![npm version](https://img.shields.io/npm/v/faxdrop-mcp.svg)](https://www.npmjs.com/package/faxdrop-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/faxdrop-mcp.svg)](https://www.npmjs.com/package/faxdrop-mcp)
 [![Node.js Version](https://img.shields.io/node/v/faxdrop-mcp.svg)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-1.29-blue)](https://modelcontextprotocol.io)
@@ -92,46 +93,83 @@ Add to `~/.cursor/mcp.json`:
 
 Add to `~/.openclaw/openclaw.json`, then restart the gateway (`docker restart openclaw-openclaw-gateway-1` or your equivalent).
 
-## Tools (2)
+## Tools (3)
 
 ### `faxdrop_send_fax`
 
-Send a fax. Uploads a local document to a fax number in international (E.164) format.
+Send a fax. Uploads a local document **from the outbox** (default `~/FaxOutbox/`) to a fax number in international (E.164) format.
 
 **Required:**
-- `filePath` (string, absolute) — PDF, DOCX, JPEG, or PNG, ≤10 MB
-- `recipientNumber` (string) — E.164, e.g. `+12125551234`
+- `filePath` (string, absolute) — PDF, DOCX, JPEG, or PNG, ≤10 MB. **Must live inside the outbox.**
+- `recipientNumber` (string) — E.164, e.g. `+12125551234`. Subject to the 3-layer phone gate (TYPE → COUNTRY → per-number).
 - `senderName` (string)
 - `senderEmail` (string)
 
-**Optional cover-page fields:**
-- `includeCover` (boolean) — free accounts default to true; paid accounts default to false
+**Optional cover-page fields** (printed only when `includeCover` is true):
+- `includeCover` (boolean) — free accounts always include a branded cover; paid accounts default to false
 - `coverNote` (string, ≤500) — message body
-- `recipientName`, `subject`, `senderCompany`, `senderPhone`
+- `recipientName` (≤50), `subject` (≤200), `senderCompany` (≤100), `senderPhone` (validated E.164)
 
 **Returns:** `{ success, faxId, status, statusUrl }`
 
-### `faxdrop_get_fax_status`
+### `faxdrop_pair_number`
 
-Check the delivery status of a previously sent fax.
+Add a fax number to the paired whitelist (`~/.faxdrop-mcp/paired.json`). Only effective when `FAXDROP_MCP_NUMBER_GATE=pairing` (default). The number must still pass the TYPE and COUNTRY checks (no bypass). **Always confirm with the user before pairing** — paired numbers can be faxed without further per-number approval.
 
 **Required:**
-- `faxId` (string) — the ID returned by `faxdrop_send_fax`
+- `recipientNumber` (string) — E.164
 
-**Returns:** `{ id, status, recipientNumber, pages, completedAt, error? }`
+**Returns:** `{ paired, country, type }`
 
-Status values: `queued` | `sending` | `delivered` | `failed` | `partial`. Most US faxes complete in under 90 seconds.
+### `faxdrop_get_fax_status`
+
+Check the delivery status of a previously sent fax. Terminal statuses (`delivered` / `failed` / `partial`) are cached process-wide (LRU 100 entries, whitelist-sliced) — re-polling a finished fax short-circuits with a `_cached: true` marker to spare your FaxDrop quota.
+
+**Recommended polling cadence**: every ~5s for the first 2 min, then every ~30s for up to 10 min, **stop on terminal status**.
+
+**Required:**
+- `faxId` (string)
+
+**Returns:** `{ id, status, recipientNumber?, pages?, completedAt?, _cached? }`
 
 ## Safeguards
 
 | Knob | Env var | Default | Notes |
 |---|---|---|---|
-| Dry run | `FAXDROP_MCP_DRY_RUN=true` | off | Write tools (`faxdrop_send_fax`) return the would-be payload (sensitive fields redacted) and never call FaxDrop. Reads still pass through. |
+| Outbox jail | `FAXDROP_MCP_WORK_DIR=/abs/path` | `~/FaxOutbox/` (auto-created mode `0o700`) | Every `filePath` must live inside this directory after `realpath` canonicalization. Symlinks to outside the outbox are rejected. |
+| Number gate | `FAXDROP_MCP_NUMBER_GATE=open\|pairing\|closed` | `pairing` | `pairing` requires HITL approval via `faxdrop_pair_number` before a new number can be faxed. `closed` disables runtime pairing (paired.json edited out-of-band). |
+| Allowed types | `FAXDROP_MCP_ALLOWED_TYPES=...` | `FIXED_LINE,FIXED_LINE_OR_MOBILE,VOIP,TOLL_FREE` | libphonenumber `NumberType` allow-list. |
+| Allowed countries | `FAXDROP_MCP_ALLOWED_COUNTRIES=...` | `US,CA,PR,GU,VI,AS,MP` | ISO-3166-1 alpha-2 allow-list (US/CA + US territories). |
+| State directory | `FAXDROP_MCP_STATE_DIR=/abs/path` | `~/.faxdrop-mcp/` (mode `0o700`) | Where `paired.json` lives (mode `0o600`, atomic write). |
+| Dry run | `FAXDROP_MCP_DRY_RUN=true` | off | Write tools (`faxdrop_send_fax`, `faxdrop_pair_number`) return the would-be payload (sensitive fields redacted) and never call FaxDrop or touch `paired.json`. |
 | Audit log | `FAXDROP_MCP_AUDIT_LOG=/abs/path/audit.log` | off | Append-only JSON Lines (file mode `0o600`). Sensitive args are redacted. |
 
-Rate limiting is left to FaxDrop itself (10/min, 100/h, 500/day per key). 429 responses get `error_type: "rate_limited"` and a `retry_after` value, both surfaced to the caller.
+### Error catalog
 
-`FaxDropError` responses are mapped to clean `isError: true` MCP responses with `error_type`, `hint`, and `retry_after`. HTTP 402 (no credits) and 429 (rate-limited) get explicit hints.
+Every failure is returned as `isError: true` with a structured `error_type`, `message`, and (when applicable) `hint` and `retry_after`. Programmatic consumers can match on `error_type` (in `structuredContent`) to drive retry logic.
+
+| `error_type` | Layer | Trigger | Suggested action |
+|---|---|---|---|
+| `phone_parse` | input | Recipient number can't be parsed by libphonenumber. | Ask user for an E.164 number. |
+| `phone_type` | policy | Phone type (e.g. MOBILE) not in `FAXDROP_MCP_ALLOWED_TYPES`. | Use a fax line, or extend the env var. |
+| `phone_country` | policy | Country not in `FAXDROP_MCP_ALLOWED_COUNTRIES`. | Confirm with the user; extend the env var if intentional. |
+| `phone_gate` | policy | Number not in `paired.json` and gate is `pairing` or `closed`. | In `pairing` mode: call `faxdrop_pair_number` first. In `closed`: edit `paired.json` out-of-band. |
+| `pair_disabled` | policy | `faxdrop_pair_number` called outside `pairing` mode. | Set `FAXDROP_MCP_NUMBER_GATE=pairing`. |
+| `bad_request` | filesystem | Path is relative, outside outbox, leaf-symlink, missing, oversized, or has an unsupported extension. | The accompanying `hint` describes the exact remedy. |
+| `unauthorized` | upstream | FaxDrop returned 401. | Check `FAXDROP_API_KEY` in your MCP client config. |
+| `payment_required` | upstream | FaxDrop returned 402 (out of credits). | Top up at the FaxDrop pricing page. |
+| `rate_limited` | upstream | FaxDrop returned 429. | Wait `retry_after` seconds; the hint shows the bucket that was hit. |
+| `invalid_response` | upstream | FaxDrop returned a non-JSON body (proxy interception, incident page). | Body is discarded for safety; check FaxDrop status page. |
+| `fax_error` | upstream (fallback) | FaxDrop returned an error with no `error_type` field. | Read the message; treat as transient. |
+
+### Rate limits & quotas
+
+Two independent caps gate every fax send, both enforced by FaxDrop:
+
+- **Per-key rate limits** (per-minute / per-hour / per-day buckets) — `429 rate_limited` with `retry_after` and `X-RateLimit-*` headers.
+- **Account credit balance** — `402 payment_required` when you run out, with a top-up hint.
+
+The MCP does **not** add its own limiter; it forwards FaxDrop's response as a clean `isError: true` with `error_type`, `hint`, and `retry_after`. See [FaxDrop's API docs](https://www.faxdrop.com/for-developers) for the current numbers.
 
 ## Security
 

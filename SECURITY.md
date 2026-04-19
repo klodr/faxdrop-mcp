@@ -27,13 +27,48 @@ the maintainer commits to, and limits that callers must account for.
   build job and a publish job (release-only) that holds `NPM_TOKEN`.
 - **Defense against runaway agents**: dry-run mode (`FAXDROP_MCP_DRY_RUN=true`)
   exercises a write tool without actually sending a fax. FaxDrop itself
-  enforces 10/min, 100/h, 500/day per key and returns 429 with `retry_after`
-  which is surfaced to the caller.
+  enforces per-API-key rate limits (per-minute / per-hour / per-day) and
+  returns `429` with `retry_after` on excess; the MCP surfaces this to
+  the caller as `error_type: "rate_limited"`. See
+  [FaxDrop's API docs](https://www.faxdrop.com/for-developers) for the
+  current numbers.
 - **Optional audit trail**: `FAXDROP_MCP_AUDIT_LOG=/abs/path/audit.log`
   writes an append-only JSON Lines record (file mode `0o600`, sensitive
   fields redacted) of every write call.
 - **Fail closed**: 60 s `AbortSignal.timeout` on every fetch; missing
   `FAXDROP_API_KEY` exits at startup.
+- **Outbox jail**: every uploaded file must live inside
+  `FAXDROP_MCP_WORK_DIR` (default `~/FaxOutbox/`, auto-created mode
+  `0o700`). Any path outside the outbox is rejected after `realpath`
+  canonicalization, preventing accidental or agent-driven exfiltration
+  of `~/.ssh/`, `~/Library/Keychains/`, or any other sensitive location.
+- **Symlink hardening on `filePath`**: leaf symlinks are rejected at
+  `lstat` (the actual attack vector — `safe.pdf → /etc/passwd`); the
+  canonical path is resolved via `realpath`; the open passes
+  `O_NOFOLLOW` as a TOCTOU barrier in case a leaf symlink sneaks in
+  between the lstat and the open.
+- **3-layer phone-number gate** on `recipientNumber` (default mode
+  `pairing` — HITL approve-by-default): TYPE → COUNTRY → per-number
+  policy. Layers 1+2 are immutable at runtime — no per-call approval
+  can bypass them. Backed by `libphonenumber-js/max` for accurate type
+  classification.
+- **Output sanitization**: every tool response text is stripped of
+  ASCII/Unicode control characters and zero-width formatters (BiDi
+  overrides, ZWSP, ZWJ, BOM…) and wrapped in
+  `<untrusted-tool-output>…</untrusted-tool-output>` fences. The fence
+  closing tag itself is escaped if it appears inside the body, so a
+  crafted FaxDrop response can't break out.
+- **Discard non-JSON FaxDrop responses**: a non-JSON body (HTML 5xx
+  page, proxy interception) is rejected with `error_type:
+  "invalid_response"`, body discarded — never forwarded to the LLM.
+
+> **Note on `structuredContent`**: every tool response carries both a
+> sanitized + fenced `content[0].text` (safe for direct LLM display)
+> AND a raw `structuredContent` field (the parsed JSON, for
+> programmatic consumers). The raw field is **not** sanitized or
+> fenced — re-injecting `structuredContent.message` directly into a
+> downstream LLM prompt would bypass the fence. Use `content[0].text`
+> for display; treat `structuredContent` as untrusted data.
 
 ### What this MCP does NOT protect against
 
@@ -52,14 +87,14 @@ the maintainer commits to, and limits that callers must account for.
   `recipientNumber`, status messages, and any error body as text fields in
   the tool response. If a malicious user has previously caused a fax to
   enter your account (e.g. via a number they own), instructions placed in
-  those fields are forwarded verbatim to the LLM. More importantly, the
-  cover-page fields you submit (`coverNote`, `recipientName`, `subject`,
-  `senderCompany`, `senderPhone`) round-trip through `faxdrop_get_fax_status`
-  in some response shapes — content originally drafted by an upstream agent
-  can re-enter the LLM context as "trusted" tool output. The MCP forwards
-  bytes verbatim and does not sanitize. Treat all fax-status response data
-  as untrusted; never auto-execute a follow-up `faxdrop_send_fax` based on
-  fields read from a status response without explicit user confirmation.
+  those fields reach the LLM. More importantly, the cover-page fields you
+  submit (`coverNote`, `recipientName`, `subject`, `senderCompany`,
+  `senderPhone`) round-trip through `faxdrop_get_fax_status` in some
+  response shapes — content originally drafted by an upstream agent can
+  re-enter the LLM context as "trusted" tool output. `content[0].text`
+  is sanitized + fenced; never auto-execute a follow-up
+  `faxdrop_send_fax` based on fields read from a status response without
+  explicit user confirmation.
 - **Account-level FaxDrop security**: 2FA, billing, fraud detection, key
   rotation are FaxDrop's responsibility, not this MCP's.
 - **Network-level attackers** beyond what TLS provides: this MCP relies on

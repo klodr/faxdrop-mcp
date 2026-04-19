@@ -1,7 +1,4 @@
 import { FaxDropClient, FaxDropError } from "../src/client.js";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 
 const ORIGINAL_FETCH = global.fetch;
 
@@ -26,20 +23,21 @@ function mockFetch(response: {
   })) as unknown as typeof fetch;
 }
 
+const FAKE_PDF_BYTES = Buffer.from("%PDF-1.4\n%fake\n");
+
+function pdfArgs(overrides: Record<string, unknown> = {}) {
+  return {
+    fileBytes: FAKE_PDF_BYTES,
+    filename: "doc.pdf",
+    mimeType: "application/pdf",
+    recipientNumber: "+12125551234",
+    senderName: "X",
+    senderEmail: "x@y.com",
+    ...overrides,
+  };
+}
+
 describe("FaxDropClient", () => {
-  let tmpDir: string;
-  let pdfPath: string;
-
-  beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), "faxdrop-test-"));
-    pdfPath = join(tmpDir, "doc.pdf");
-    writeFileSync(pdfPath, "%PDF-1.4\n%fake\n");
-  });
-
-  afterEach(() => {
-    rmSync(tmpDir, { recursive: true, force: true });
-  });
-
   it("constructs with an API key", () => {
     const client = new FaxDropClient({ apiKey: "fd_live_test" });
     expect(client).toBeInstanceOf(FaxDropClient);
@@ -88,47 +86,7 @@ describe("FaxDropClient", () => {
     expect(capturedUrl).toContain("/api/v1/fax/fax%2Fwith%2Fslash");
   });
 
-  it("sendFax rejects relative path", async () => {
-    const client = new FaxDropClient({ apiKey: "k" });
-    await expect(
-      client.sendFax({
-        filePath: "relative/doc.pdf",
-        recipientNumber: "+12125551234",
-        senderName: "X",
-        senderEmail: "x@y.com",
-      }),
-    ).rejects.toMatchObject({ status: 400, errorType: "bad_request" });
-  });
-
-  it("sendFax rejects unsupported extension", async () => {
-    const exe = join(tmpDir, "x.exe");
-    writeFileSync(exe, "MZ");
-    const client = new FaxDropClient({ apiKey: "k" });
-    await expect(
-      client.sendFax({
-        filePath: exe,
-        recipientNumber: "+12125551234",
-        senderName: "X",
-        senderEmail: "x@y.com",
-      }),
-    ).rejects.toMatchObject({ status: 400, errorType: "bad_request" });
-  });
-
-  it("sendFax rejects file > 10MB", async () => {
-    const big = join(tmpDir, "big.pdf");
-    writeFileSync(big, Buffer.alloc(11 * 1024 * 1024, 0));
-    const client = new FaxDropClient({ apiKey: "k" });
-    await expect(
-      client.sendFax({
-        filePath: big,
-        recipientNumber: "+12125551234",
-        senderName: "X",
-        senderEmail: "x@y.com",
-      }),
-    ).rejects.toMatchObject({ status: 400 });
-  });
-
-  it("sendFax POSTs multipart with required fields", async () => {
+  it("sendFax POSTs multipart with required fields (bytes from caller)", async () => {
     let capturedInit: RequestInit | undefined;
     let capturedUrl: string | undefined;
     global.fetch = (async (url: URL | string, init?: RequestInit) => {
@@ -144,14 +102,14 @@ describe("FaxDropClient", () => {
     }) as unknown as typeof fetch;
 
     const client = new FaxDropClient({ apiKey: "fd_live_xxx" });
-    const result = await client.sendFax({
-      filePath: pdfPath,
-      recipientNumber: "+12125551234",
-      senderName: "Claude Test",
-      senderEmail: "test@example.com",
-      coverNote: "Hello",
-      includeCover: true,
-    });
+    const result = await client.sendFax(
+      pdfArgs({
+        senderName: "Claude Test",
+        senderEmail: "test@example.com",
+        coverNote: "Hello",
+        includeCover: true,
+      }),
+    );
 
     expect(result).toEqual({ success: true, faxId: "fax_xyz", status: "queued" });
     expect(capturedUrl).toContain("/api/send-fax");
@@ -170,6 +128,35 @@ describe("FaxDropClient", () => {
     expect(headers["X-API-Key"]).toBe("fd_live_xxx");
     // Important: no Content-Type override — fetch sets multipart boundary itself
     expect(headers["Content-Type"]).toBeUndefined();
+  });
+
+  it("sendFax forwards every optional cover-page field when set", async () => {
+    let capturedInit: RequestInit | undefined;
+    global.fetch = (async (_url: URL | string, init?: RequestInit) => {
+      capturedInit = init;
+      return {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () => JSON.stringify({ success: true, faxId: "fax_full" }),
+        headers: { get: () => null },
+      };
+    }) as unknown as typeof fetch;
+
+    const client = new FaxDropClient({ apiKey: "k" });
+    await client.sendFax(
+      pdfArgs({
+        recipientName: "Dr. Smith",
+        subject: "Lab results",
+        senderCompany: "Acme Co",
+        senderPhone: "+12125550000",
+      }),
+    );
+    const fd = capturedInit?.body as FormData;
+    expect(fd.get("recipientName")).toBe("Dr. Smith");
+    expect(fd.get("subject")).toBe("Lab results");
+    expect(fd.get("senderCompany")).toBe("Acme Co");
+    expect(fd.get("senderPhone")).toBe("+12125550000");
   });
 
   it("throws FaxDropError with parsed error body on non-2xx", async () => {
@@ -227,6 +214,37 @@ describe("FaxDropClient", () => {
     }
   });
 
+  it("on a non-2xx with no body, falls back to a generic error message + undefined retry", async () => {
+    mockFetch({ ok: false, status: 500, statusText: "Internal Server Error", body: "" });
+    const client = new FaxDropClient({ apiKey: "k" });
+    try {
+      await client.getFaxStatus("fax_abc");
+      fail("Expected FaxDropError");
+    } catch (err) {
+      const e = err as FaxDropError;
+      expect(e.status).toBe(500);
+      expect(e.message).toContain("FaxDrop API GET /api/v1/fax/fax_abc failed: 500");
+      expect(e.errorType).toBeUndefined();
+      expect(e.hint).toBeUndefined();
+      expect(e.retryAfter).toBeUndefined();
+    }
+  });
+
+  it("on a non-2xx with empty {} body, fallbacks fire on every optional field", async () => {
+    mockFetch({ ok: false, status: 503, body: {} });
+    const client = new FaxDropClient({ apiKey: "k" });
+    try {
+      await client.getFaxStatus("fax_abc");
+      fail("Expected FaxDropError");
+    } catch (err) {
+      const e = err as FaxDropError;
+      expect(e.status).toBe(503);
+      expect(e.errorType).toBeUndefined();
+      expect(e.hint).toBeUndefined();
+      expect(e.retryAfter).toBeUndefined();
+    }
+  });
+
   it("returns { ok: true } when the response body is empty (e.g. 200 with no payload)", async () => {
     global.fetch = (async () => ({
       ok: true,
@@ -239,41 +257,10 @@ describe("FaxDropClient", () => {
     const result = await client.getFaxStatus("fax_abc");
     expect(result).toEqual({ ok: true });
   });
-
-  it("sendFax forwards every optional cover-page field when set", async () => {
-    let capturedInit: RequestInit | undefined;
-    global.fetch = (async (_url: URL | string, init?: RequestInit) => {
-      capturedInit = init;
-      return {
-        ok: true,
-        status: 200,
-        statusText: "OK",
-        text: async () => JSON.stringify({ success: true, faxId: "fax_full" }),
-        headers: { get: () => null },
-      };
-    }) as unknown as typeof fetch;
-
-    const client = new FaxDropClient({ apiKey: "k" });
-    await client.sendFax({
-      filePath: pdfPath,
-      recipientNumber: "+12125551234",
-      senderName: "X",
-      senderEmail: "x@y.com",
-      recipientName: "Dr. Smith",
-      subject: "Lab results",
-      senderCompany: "Acme Co",
-      senderPhone: "+12125550000",
-    });
-    const fd = capturedInit?.body as FormData;
-    expect(fd.get("recipientName")).toBe("Dr. Smith");
-    expect(fd.get("subject")).toBe("Lab results");
-    expect(fd.get("senderCompany")).toBe("Acme Co");
-    expect(fd.get("senderPhone")).toBe("+12125550000");
-  });
 });
 
 describe("FaxDropClient — non-JSON response handling", () => {
-  it("falls back to raw text when the response body is not JSON", async () => {
+  it("discards a non-JSON response body and throws invalid_response (HTML pages, proxy interception)", async () => {
     mockFetch({
       ok: false,
       status: 502,
@@ -288,11 +275,24 @@ describe("FaxDropClient — non-JSON response handling", () => {
       expect(err).toBeInstanceOf(FaxDropError);
       const e = err as FaxDropError;
       expect(e.status).toBe(502);
-      // The body should be the raw HTML string (not parsed)
-      expect(e.body).toBe("<html><body>Bad gateway</body></html>");
-      // No structured error_type because the body wasn't a JSON object
-      expect(e.errorType).toBeUndefined();
+      expect(e.errorType).toBe("invalid_response");
+      // The raw HTML must NOT leak through — discarding for safety.
+      expect(JSON.stringify(e)).not.toContain("Bad gateway");
+      expect(JSON.stringify(e)).not.toContain("<html>");
     }
+  });
+
+  it("also discards a non-JSON 200 response (proxy hijack / wrong content-type)", async () => {
+    mockFetch({
+      ok: true,
+      status: 200,
+      body: "some upstream HTML page",
+    });
+    const client = new FaxDropClient({ apiKey: "k" });
+    await expect(client.getFaxStatus("fax_abc")).rejects.toMatchObject({
+      status: 200,
+      errorType: "invalid_response",
+    });
   });
 });
 
