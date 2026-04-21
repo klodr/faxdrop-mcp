@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-04-21
+
+### Added
+
+- Funding links in `.github/FUNDING.yml` (GitHub Sponsors, Patreon,
+  Ko-fi) and matching badges at the top of the README. Monthly
+  recurring funding helps cover the tooling (Claude Code, Socket
+  Security, CI) behind steady security patches and issue triage.
+
+### Changed
+
+- `.coderabbit.yaml` now carries an explicit policy NOTE forbidding
+  CodeRabbit-authored commits: on a solo-maintainer repo the branch
+  protection rule "approval from someone other than the last pusher"
+  deadlocks if the bot is both the last pusher and the approver. No
+  functional change — `pre_merge_checks.override_requested_reviewers_only`
+  already kept bot approval from substituting an explicitly-requested
+  human reviewer; this commit documents the complementary human
+  discipline (never click GitHub's "Commit suggestion" on a CodeRabbit
+  inline suggestion, never run `@coderabbitai apply suggestions`).
+- `dependabot.yml`: drop `include: "scope"` (was producing duplicated
+  titles like `deps(deps): bump X` / `deps-dev(deps-dev): bump X`
+  because the prefix already encodes prod vs dev). Reduce
+  `open-pull-requests-limit` from 10 to 5 to keep the review queue
+  manageable.
+
 ## [0.3.2] - 2026-04-19
 
 ### Security
