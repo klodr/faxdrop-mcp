@@ -41,8 +41,11 @@ COPY --from=build --chown=mcp:mcp /app/dist ./dist
 COPY --from=build --chown=mcp:mcp /app/package.json ./package.json
 
 # Sensible defaults for the fax outbox inside the container.
+# Pre-create the directory owner-only (0o700) so the runtime jail
+# policy enforced by src/file-jail.ts is already satisfied before
+# the first fax is written.
 ENV FAXDROP_MCP_WORK_DIR=/app/outbox
-RUN mkdir -p /app/outbox
+RUN mkdir -p /app/outbox && chmod 700 /app/outbox
 
 # stdio MCP: no listening sockets, no EXPOSE.
 ENTRYPOINT ["node", "dist/index.js"]
