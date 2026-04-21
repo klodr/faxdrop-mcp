@@ -189,8 +189,6 @@ PRs welcome. Before submitting:
 - `npm run lint` (must succeed)
 - `CHANGELOG.md` updated under `[Unreleased]`
 
-Releases are automated: bump `package.json` → merge release PR → `git tag -s vX.Y.Z && git push origin vX.Y.Z`. The release workflow extracts the matching CHANGELOG section, creates the GitHub Release, signs `dist/index.js` with Sigstore, and publishes to npm with provenance.
-
 ## License
 
 MIT — see [LICENSE](./LICENSE).
