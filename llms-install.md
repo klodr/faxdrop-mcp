@@ -55,6 +55,7 @@ client that can launch a stdio child process can use this server.
    | `FAXDROP_MCP_STATE_DIR` | `~/.faxdrop-mcp/` (`0o700`) | Override only if the user wants per-project state |
    | `FAXDROP_MCP_DRY_RUN` | unset | Set to `true` to validate prompts without sending — useful for first-run smoke tests |
    | `FAXDROP_MCP_AUDIT_LOG` | unset | Set to an absolute path to record a redacted JSONL audit trail (`0o600`) |
+   | `FAXDROP_API_BASE_URL` | unset (uses FaxDrop production API) | Advanced — override only for testing against a local proxy or alternate endpoint. Must be an absolute HTTPS URL. Leave unset in normal use. |
 
 3. Restart (or reconnect) the MCP client so the new server is picked up.
 
