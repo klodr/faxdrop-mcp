@@ -182,12 +182,7 @@ The MCP does **not** add its own limiter; it forwards FaxDrop's response as a cl
 
 ## Contributing
 
-PRs welcome. Before submitting:
-
-- `npm test` (must stay green)
-- `npm run build` (must succeed)
-- `npm run lint` (must succeed)
-- `CHANGELOG.md` updated under `[Unreleased]`
+PRs welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the test/build/lint checklist and release process.
 
 ## License
 
