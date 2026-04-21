@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   human reviewer; this commit documents the complementary human
   discipline (never click GitHub's "Commit suggestion" on a CodeRabbit
   inline suggestion, never run `@coderabbitai apply suggestions`).
+- `dependabot.yml`: drop `include: "scope"` (was producing duplicated
+  titles like `deps(deps): bump X` / `deps-dev(deps-dev): bump X`
+  because the prefix already encodes prod vs dev). Reduce
+  `open-pull-requests-limit` from 10 to 5 to keep the review queue
+  manageable.
 
 ## [0.3.2] - 2026-04-19
 
