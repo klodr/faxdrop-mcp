@@ -9,6 +9,7 @@
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/klodr/faxdrop-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/klodr/faxdrop-mcp)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12578/badge)](https://www.bestpractices.dev/projects/12578)
 [![Socket Security](https://socket.dev/api/badge/npm/package/faxdrop-mcp)](https://socket.dev/npm/package/faxdrop-mcp)
+[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/klodr/faxdrop-mcp?utm_source=oss&utm_medium=github&utm_campaign=klodr%2Ffaxdrop-mcp&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai)
 
 [![npm version](https://img.shields.io/npm/v/faxdrop-mcp.svg)](https://www.npmjs.com/package/faxdrop-mcp)
 [![npm downloads](https://img.shields.io/npm/dm/faxdrop-mcp.svg)](https://www.npmjs.com/package/faxdrop-mcp)
@@ -187,8 +188,6 @@ PRs welcome. Before submitting:
 - `npm run build` (must succeed)
 - `npm run lint` (must succeed)
 - `CHANGELOG.md` updated under `[Unreleased]`
-
-Releases are automated: bump `package.json` → merge release PR → `git tag -s vX.Y.Z && git push origin vX.Y.Z`. The release workflow extracts the matching CHANGELOG section, creates the GitHub Release, signs `dist/index.js` with Sigstore, and publishes to npm with provenance.
 
 ## License
 
