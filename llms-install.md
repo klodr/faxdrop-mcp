@@ -17,6 +17,7 @@ client that can launch a stdio child process can use this server.
 
 1. Add the server to the MCP client's configuration. The entry below is
    **client-agnostic**; place it inside the client's `mcpServers` map:
+
    ```json
    {
      "mcpServers": {
