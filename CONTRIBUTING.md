@@ -9,6 +9,10 @@ PRs welcome.
 - `npm run lint` (must succeed)
 - `CHANGELOG.md` updated under `[Unreleased]`
 
+## Developer Certificate of Origin
+
+Every commit carries a `Signed-off-by:` trailer — adding it (automatic with `git commit -s` or our prepare-commit-msg hook) certifies the [DCO 1.1](https://developercertificate.org/).
+
 ## Releases (maintainers only)
 
 Releases are automated. To cut a release:
