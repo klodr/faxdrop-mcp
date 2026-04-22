@@ -1,7 +1,7 @@
 name: Qodo Merge (dual reviewer)
 
 # Runs two parallel AI reviews via qodo-ai/pr-agent — one with DeepSeek
-# (distinct lineage from CodeRabbit's GPT base) and one with Gemini 2.5 Pro
+# (distinct lineage from CodeRabbit's GPT base) and one with Gemini 3.1 Pro Preview
 # (Google US/EU residency). Both post under `qodo-ai[bot]` with a distinct
 # `[DeepSeek]` / `[Gemini]` prefix so they can be disambiguated in the UI.
 #
