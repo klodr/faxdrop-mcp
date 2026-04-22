@@ -201,7 +201,12 @@ jobs:
             --repo "${{ github.repository }}" \
             --clobber
 
+      # --ignore-scripts: `npm prune --omit=dev` above removed tsc + tsup,
+      # which would break the `prepublishOnly: npm run build` lifecycle
+      # hook if npm publish re-ran it here. The explicit build earlier in
+      # this job already produced a fresh dist/, so skipping lifecycle
+      # scripts at publish time is safe and correct.
       - name: Publish to npm
-        run: npm publish --access public --provenance
+        run: npm publish --access public --provenance --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
