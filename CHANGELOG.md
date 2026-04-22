@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-04-22
+
+### Added
+
+- **Dockerfile + `.github/icon.png`** — container distribution path for the Docker MCP Registry submission. Multi-stage, `node:20-alpine` pinned by digest, non-root `mcp` user, OCI labels (`version` from build-arg), no EXPOSE, explicit `HEALTHCHECK NONE` to silence Checkov `CKV_DOCKER_2` on stdio images. Pre-creates `/app/outbox` (mode `0o700`) so the runtime jail policy is satisfied before the first fax is written.
+- **`.github/workflows/docker.yml`** — buildx + GHA cache, asserts required OCI labels + non-root `USER=mcp`, strict smoke-test that accepts `exit 1` (fail-fast with explicit "required" marker in stderr) or `exit 124` (stdin wait).
+
+### Changed
+
+- **Roadmap extracted to `ROADMAP.md`** (no longer inlined in the README) and Silver-tier wording consolidated. Purely a docs reshuffle; the repo content covered by OpenSSF Best Practices is unchanged.
+- **Dockerfile smoke-test `exit=1` branch** tightened — the grep now requires both `FAXDROP_API_KEY` and the word `required` on the same line, so a crash that incidentally mentions the env-var name doesn't pass as a healthy startup.
+- `.github/dependabot.yml` — `@types/node` major-version-clamp comment aligned with `engines.node` floor.
+
 ## [0.3.3] - 2026-04-21
 
 ### Added
