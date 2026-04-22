@@ -5,11 +5,11 @@
  */
 
 import * as fc from "fast-check";
-import { redactSensitive, SENSITIVE_KEYS } from "../src/middleware.js";
+import { AUDIT_SAFE_KEYS, redactSensitive, SENSITIVE_KEYS } from "../src/middleware.js";
 import { FaxDropError } from "../src/client.js";
 
-// SENSITIVE_KEYS is imported from src/middleware.ts so the property tests
-// stay in sync with the canonical list — no risk of drift.
+// SENSITIVE_KEYS / AUDIT_SAFE_KEYS are imported from src/middleware.ts so
+// the property tests stay in sync with the canonical lists — no drift.
 
 // Mixed-case variants exercise the `.toLowerCase()` path inside
 // redactSensitive. If a future refactor drops case-folding, the property
@@ -20,7 +20,18 @@ const mixedCaseKeys = SENSITIVE_KEYS.flatMap((k) => [
   [...k].map((c, i) => (i % 2 === 0 ? c.toUpperCase() : c)).join(""), // alternating
 ]);
 
-describe("Fuzz: redactSensitive", () => {
+// Key pool for the fuzz: sensitive, audit-safe, and random unknown keys.
+// We filter random keys so they never collide with a sensitive or safe
+// key by accident (which would invalidate the property's expectation).
+const randomNeutralKey = fc
+  .string({ minLength: 1, maxLength: 8 })
+  .filter(
+    (k) =>
+      !(SENSITIVE_KEYS as readonly string[]).includes(k.toLowerCase()) &&
+      !(AUDIT_SAFE_KEYS as readonly string[]).includes(k),
+  );
+
+describe("Fuzz: redactSensitive (allowlist: FaxDrop response fields only)", () => {
   it("never leaks any value stored under a sensitive key, at any depth", () => {
     fc.assert(
       fc.property(
@@ -31,12 +42,8 @@ describe("Fuzz: redactSensitive", () => {
             fc.integer(),
             fc.boolean(),
             fc.constant(null),
-            fc.array(tie("value"), { maxLength: 5 }),
             fc.dictionary(
-              fc.oneof(
-                fc.constantFrom(...SENSITIVE_KEYS, ...mixedCaseKeys),
-                fc.string({ minLength: 1, maxLength: 8 }),
-              ),
+              fc.oneof(fc.constantFrom(...SENSITIVE_KEYS, ...mixedCaseKeys), randomNeutralKey),
               tie("value"),
               { maxKeys: 5 },
             ),
@@ -44,21 +51,26 @@ describe("Fuzz: redactSensitive", () => {
         })).value,
         (input) => {
           const out = redactSensitive(input);
+          // Property: for any object reached BEFORE the redactor switches to
+          // an elided string (via an array or a non-safe nested container),
+          // every sensitive key maps to "[REDACTED]". We only walk matching
+          // object/object pairs — elided strings end the descent.
           const stack: Array<{ a: unknown; b: unknown }> = [{ a: input, b: out }];
           while (stack.length > 0) {
             const { a, b } = stack.pop()!;
             if (a === null || typeof a !== "object") continue;
-            if (Array.isArray(a)) {
-              if (!Array.isArray(b) || b.length !== a.length) return false;
-              for (let i = 0; i < a.length; i++) stack.push({ a: a[i], b: b[i] });
-              continue;
-            }
+            if (Array.isArray(a)) continue; // elided → no descent
+            // After the first level, non-safe keys turn into strings; their
+            // sub-tree is not walked anyway. Only recurse when both sides
+            // are plain objects.
+            if (b === null || typeof b !== "object" || Array.isArray(b)) continue;
             const ao = a as Record<string, unknown>;
             const bo = b as Record<string, unknown>;
             for (const k of Object.keys(ao)) {
               if ((SENSITIVE_KEYS as readonly string[]).includes(k.toLowerCase())) {
                 if (bo[k] !== "[REDACTED]") return false;
-              } else {
+              } else if ((AUDIT_SAFE_KEYS as readonly string[]).includes(k)) {
+                // Safe key: same-type descend when both are objects
                 stack.push({ a: ao[k], b: bo[k] });
               }
             }
@@ -70,15 +82,13 @@ describe("Fuzz: redactSensitive", () => {
     );
   });
 
-  it("preserves all non-sensitive keys verbatim", () => {
+  it("preserves the FaxDrop response (AUDIT_SAFE) keys verbatim at the top level", () => {
     fc.assert(
       fc.property(
         fc.dictionary(
-          fc
-            .string({ minLength: 1, maxLength: 8 })
-            .filter((k) => !(SENSITIVE_KEYS as readonly string[]).includes(k.toLowerCase())),
-          fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
-          { maxKeys: 8 },
+          fc.constantFrom(...AUDIT_SAFE_KEYS),
+          fc.oneof(fc.string(), fc.integer(), fc.constant(null)),
+          { maxKeys: AUDIT_SAFE_KEYS.length },
         ),
         (input) => {
           const out = redactSensitive(input) as Record<string, unknown>;
@@ -88,6 +98,16 @@ describe("Fuzz: redactSensitive", () => {
           return true;
         },
       ),
+      { numRuns: 200 },
+    );
+  });
+
+  it("elides any non-sensitive, non-safe string with an [ELIDED:N chars] marker", () => {
+    fc.assert(
+      fc.property(randomNeutralKey, fc.string({ minLength: 0, maxLength: 100 }), (key, val) => {
+        const out = redactSensitive({ [key]: val }) as Record<string, unknown>;
+        return out[key] === `[ELIDED:${val.length} chars]`;
+      }),
       { numRuns: 200 },
     );
   });
