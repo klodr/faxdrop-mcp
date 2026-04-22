@@ -4,6 +4,7 @@
 
 ## What that means in practice
 
+- **Node.js 22 migration — deadline 2026-04-30** — Node 20 reaches security-support EOL on April 30, 2026. Bump `engines.node` to `>=22.0.0`, retarget `tsup.config.ts` to `node22`, pin the Dockerfile to `node:22-alpine@sha256:…`, drop Node 20 from the CI matrix (keep 22/24), bump `@types/node` to `^22.x`. Blocking for any release cut after 2026-04-30.
 - **Track the FaxDrop API** — if FaxDrop evolves the send / status / numbers endpoints, the MCP is updated to match, without growing its own surface.
 - **Track the MCP SDK** — follow the `@modelcontextprotocol/sdk` major-version train; migrate to Zod v4-only idioms once the SDK floor allows.
 - **Security hygiene** — Dependabot, Socket, Scorecard, CodeQL, CodeRabbit runs on every PR; every release stays Sigstore-signed with npm provenance.
