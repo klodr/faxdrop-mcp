@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { FaxDropClient } from "./client.js";
 import { registerAllTools } from "./tools/index.js";
+import { registerAllPrompts } from "./prompts/index.js";
 
 // Kept in sync with package.json by scripts/sync-version.mjs (called by the
 // `npm version` lifecycle hook). Do not edit manually — bump via
@@ -31,6 +32,7 @@ export function createServer(opts: ServerOptions): McpServer {
   });
 
   registerAllTools(server, client);
+  registerAllPrompts(server);
 
   if (opts.baseUrl) log(`FaxDrop base URL overridden → ${opts.baseUrl}`);
 
