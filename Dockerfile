@@ -47,5 +47,8 @@ COPY --from=build --chown=mcp:mcp /app/package.json ./package.json
 ENV FAXDROP_MCP_WORK_DIR=/app/outbox
 RUN mkdir -p /app/outbox && chmod 700 /app/outbox
 
-# stdio MCP: no listening sockets, no EXPOSE.
+# stdio MCP: no listening sockets, no EXPOSE. HEALTHCHECK is meaningless
+# for a stdio child process — make that explicit so scanners (Checkov
+# CKV_DOCKER_2 etc.) stop flagging it as a missing-probe finding.
+HEALTHCHECK NONE
 ENTRYPOINT ["node", "dist/index.js"]
