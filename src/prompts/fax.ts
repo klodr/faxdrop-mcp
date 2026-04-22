@@ -1,6 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { FAX_NUMBER, EMAIL } from "../tools/fax.js";
+// Importing from `../schemas.js` (a thin Zod-only module) rather than
+// `../tools/fax.js` so the prompt layer does not pick up the tool
+// runtime as a transitive dependency.
+import { EMAIL, FAX_NUMBER, parseFaxIds } from "../schemas.js";
 
 /**
  * Two user-facing slash commands exposed through MCP's prompt API
@@ -55,14 +58,9 @@ const FaxHistorySummaryArgs = {
   faxIds: z
     .string()
     .min(1)
-    .refine(
-      (s) =>
-        s
-          .split(",")
-          .map((x) => x.trim())
-          .filter(Boolean).length > 0,
-      "faxIds must contain at least one non-empty FaxDrop ID",
-    )
+    .refine((s) => parseFaxIds(s).length > 0, {
+      message: "faxIds must contain at least one non-empty FaxDrop ID",
+    })
     .describe(
       "Comma-separated list of FaxDrop IDs to summarize (e.g. `fax_abc,fax_def,fax_ghi`). Each is polled via faxdrop_get_fax_status.",
     ),
@@ -121,10 +119,7 @@ export function registerFaxPrompts(server: McpServer): void {
       argsSchema: FaxHistorySummaryArgs,
     },
     ({ faxIds }) => {
-      const ids = faxIds
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+      const ids = parseFaxIds(faxIds);
       return {
         description: `Summarize status of ${ids.length} fax(es)`,
         messages: [

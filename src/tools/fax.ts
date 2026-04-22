@@ -11,18 +11,12 @@ import {
   validateTypeAndCountry,
 } from "../phone-gate.js";
 import { getCachedStatus, maybeCacheStatus } from "../status-cache.js";
+// FAX_NUMBER and EMAIL are defined in the standalone schemas module so
+// the prompt layer can reuse them without importing the tool runtime.
+import { EMAIL, FAX_NUMBER } from "../schemas.js";
 
-// `recipientNumber` is validated by validateAll() inside the handler — it
-// runs libphonenumber once and emits the structured 3-layer diagnostic
-// (parse / type / country / gate). A Zod refine here would re-parse the
-// same string with no extra information, just so the error reaches the
-// caller through Zod instead of through the handler. Skip it.
-export const FAX_NUMBER = z
-  .string()
-  .min(1)
-  .describe(
-    "Recipient fax number, international (E.164) format with leading + and country code, e.g. +12125551234",
-  );
+// Re-export for anyone who already depends on them being exposed here.
+export { FAX_NUMBER, EMAIL };
 
 const SENDER_PHONE = z
   .string()
@@ -30,8 +24,6 @@ const SENDER_PHONE = z
     message: "Must be a valid international (E.164) phone number, e.g. +13155550123",
   })
   .describe("Sender callback number shown on the cover page (E.164 format).");
-
-export const EMAIL = z.string().email().describe("Sender email for delivery confirmation.");
 
 export function registerFaxTools(server: McpServer, client: FaxDropClient): void {
   defineTool(
