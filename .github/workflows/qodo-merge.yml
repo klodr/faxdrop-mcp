@@ -1,0 +1,82 @@
+name: Qodo Merge (dual reviewer)
+
+# Runs two parallel AI reviews via qodo-ai/pr-agent — one with DeepSeek
+# (distinct lineage from CodeRabbit's GPT base) and one with Gemini 2.5 Pro
+# (Google US/EU residency). Both post under `qodo-ai[bot]` with a distinct
+# `[DeepSeek]` / `[Gemini]` prefix so they can be disambiguated in the UI.
+#
+# Intentional complement to CodeRabbit: triangulates findings with 3
+# independent model families (GPT, DeepSeek, Gemini) rather than re-reading
+# the same diff with the same lineage. See project_qodo_dual_reviewer_plan.md.
+#
+# Scope: only the /review tool is enabled — /describe would overwrite the
+# author's PR description, /improve produces commitable suggestions which
+# block merges for a solo maintainer (see feedback_coderabbit_no_auto_commit).
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  # Cancel in-flight runs on push — only the latest commit's review matters.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qodo-deepseek:
+    name: Qodo review (DeepSeek)
+    runs-on: ubuntu-latest
+    # Skip drafts unless explicitly marked ready; they're noisy and the
+    # API cost isn't useful while the PR is still being drafted.
+    if: ${{ !github.event.pull_request.draft }}
+    steps:
+      - name: PR Agent — DeepSeek
+        uses: qodo-ai/pr-agent@d82f7d3e696cd00822694aaa3096265d3889f3f1 # v0.34
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONFIG__MODEL: deepseek/deepseek-chat
+          CONFIG__FALLBACK_MODELS: '["deepseek/deepseek-chat"]'
+          DEEPSEEK__KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GITHUB_ACTION_CONFIG__AUTO_REVIEW: "true"
+          GITHUB_ACTION_CONFIG__AUTO_DESCRIBE: "false"
+          GITHUB_ACTION_CONFIG__AUTO_IMPROVE: "false"
+          # Default pr_actions excludes `synchronize` → subsequent pushes
+          # would be silently skipped. Include it so each new commit
+          # triggers a fresh review (aligned with the workflow's `on:`).
+          GITHUB_ACTION_CONFIG__PR_ACTIONS: '["opened", "reopened", "ready_for_review", "synchronize"]'
+          # With persistent_comment=true, both jobs detect each other's
+          # comment via the same HTML marker and the second run overwrites
+          # the first — we'd only ever see one of the two reviews. Disable
+          # persistence so each model's review lands in its own comment.
+          PR_REVIEWER__PERSISTENT_COMMENT: "false"
+          # Prefix every review with [DeepSeek] so the two jobs can be
+          # told apart in the PR timeline (both post as qodo-ai[bot]).
+          PR_REVIEWER__EXTRA_INSTRUCTIONS: "Prefix the review title with '[DeepSeek]'."
+
+  qodo-gemini:
+    name: Qodo review (Gemini)
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.pull_request.draft }}
+    steps:
+      - name: PR Agent — Gemini
+        uses: qodo-ai/pr-agent@d82f7d3e696cd00822694aaa3096265d3889f3f1 # v0.34
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONFIG__MODEL: gemini/gemini-3.1-pro-preview
+          CONFIG__FALLBACK_MODELS: '["gemini/gemini-3-pro-preview"]'
+          GOOGLE_AI_STUDIO__GEMINI_API_KEY: ${{ secrets.GOOGLE_AI_STUDIO_API_KEY }}
+          GITHUB_ACTION_CONFIG__AUTO_REVIEW: "true"
+          GITHUB_ACTION_CONFIG__AUTO_DESCRIBE: "false"
+          GITHUB_ACTION_CONFIG__AUTO_IMPROVE: "false"
+          GITHUB_ACTION_CONFIG__PR_ACTIONS: '["opened", "reopened", "ready_for_review", "synchronize"]'
+          # With persistent_comment=true, both jobs detect each other's
+          # comment via the same HTML marker and the second run overwrites
+          # the first — we'd only ever see one of the two reviews. Disable
+          # persistence so each model's review lands in its own comment.
+          PR_REVIEWER__PERSISTENT_COMMENT: "false"
+          PR_REVIEWER__EXTRA_INSTRUCTIONS: "Prefix the review title with '[Gemini]'."
