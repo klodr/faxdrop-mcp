@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-04-22
+
+### Added
+
+- **Dockerfile + `.github/icon.png`** — container distribution path for the Docker MCP Registry submission. Multi-stage, `node:20-alpine` pinned by digest, non-root `mcp` user, OCI labels (`version` from build-arg), no EXPOSE, explicit `HEALTHCHECK NONE` to silence Checkov `CKV_DOCKER_2` on stdio images. Pre-creates `/app/outbox` (mode `0o700`) so the runtime jail policy is satisfied before the first fax is written.
+- **`.github/workflows/docker.yml`** — buildx + GHA cache, asserts required OCI labels + non-root `USER=mcp`, strict smoke-test that accepts `exit 1` (fail-fast with explicit "required" marker in stderr) or `exit 124` (stdin wait).
+- **Release workflow now ships SPDX 2.3 + CycloneDX 1.6 SBOMs** (`anchore/sbom-action`) alongside `dist/index.js`, each signed via `actions/attest@v4` (not the deprecated `actions/attest-sbom`). SBOM subject is `dist/index.js`; verification via `gh attestation verify index.js --predicate-type https://spdx.dev/Document/v2.3` (or `https://cyclonedx.org/bom`).
+- **`npm prune --omit=dev`** before SBOM generation so SBOMs reflect the runtime dependency tree, not the build toolchain (`tsup`, `typescript`, `vitest`). `npm publish` runs with `--ignore-scripts` since the build is already done earlier in the job.
+- **`CONTRIBUTING.md`** — one-line Developer Certificate of Origin reference (`Signed-off-by:` auto-added via global `prepare-commit-msg` hook certifies DCO 1.1).
+
+### Changed
+
+- **Roadmap extracted to `ROADMAP.md`** (no longer inlined in the README) and Silver-tier wording consolidated. Purely a docs reshuffle; the repo content covered by OpenSSF Best Practices is unchanged.
+- **Dockerfile smoke-test `exit=1` branch** tightened — the grep now requires both `FAXDROP_API_KEY` and the word `required` on the same line, so a crash that incidentally mentions the env-var name doesn't pass as a healthy startup.
+- `.github/dependabot.yml` — `@types/node` major-version-clamp comment aligned with `engines.node` floor.
+- **`ROADMAP.md`** — Node.js 22 migration tracked with a hard deadline of 2026-04-30 (Node 20 security-support EOL).
+
+### Security (author hygiene)
+
+- **Full history rewrite on `main`** — every commit authored by the maintainer now carries `klodr@users.noreply.github.com` both as `Author` and in its `Signed-off-by:` trailer. Earlier commits (and `Co-authored-by:` lines inherited from merged dependabot PRs) had exposed the maintainer's primary and secondary personal emails. No functional change; purely a metadata privacy pass triggered by GitHub's "Keep my email addresses private" setting. SHAs on `main` have changed; the previously-tagged `v0.3.4` (never shipped under its own number after this cleanup) has been retired in favour of `v0.3.5` to keep the tag/npm histories coherent.
+
+### Not released
+
+- `v0.3.4` was cut, tagged, and published to npm earlier today. It is now **unpublished** from npm (within the 72h window) and its tag has been removed. Its content is superseded by this release.
+
 ## [0.3.3] - 2026-04-21
 
 ### Added
