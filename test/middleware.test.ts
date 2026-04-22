@@ -112,6 +112,29 @@ describe("Middleware", () => {
       expect(payload).not.toContain("fd_live_secret_should_not_appear");
       expect(payload).toContain("+12125551234");
     });
+
+    it("dry-run wouldCallWith uses the args allowlist (response-only names are elided)", async () => {
+      // Regression guard against reverting line 212 to redactSensitive(args),
+      // which falls through to AUDIT_SAFE_RESPONSE_KEYS_SET and would preserve
+      // response-only field names (id, status, pages, completedAt, error)
+      // if a future tool ever accepted them as request args.
+      process.env.FAXDROP_MCP_DRY_RUN = "true";
+      const handler = vi.fn(async () => ({
+        content: [{ type: "text" as const, text: "ok" }],
+      }));
+      const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
+      const result = await wrapped({
+        recipientNumber: "+12125551234", // in the args allowlist → kept
+        faxId: "fax_123", // in the args allowlist → kept
+        id: "should-not-leak", // response-only; must NOT pass through
+        status: "should-not-leak", // response-only; must NOT pass through
+        error: "should-not-leak", // response-only; must NOT pass through
+      });
+      const payload = result.content[0].text;
+      expect(payload).toContain("+12125551234");
+      expect(payload).toContain("fax_123");
+      expect(payload).not.toContain("should-not-leak");
+    });
   });
 
   describe("redactSensitive (allowlist: FaxDrop response fields only)", () => {

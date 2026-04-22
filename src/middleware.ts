@@ -140,10 +140,13 @@ export function redactForAudit(
 }
 
 /**
- * Backward-compat alias. The dry-run payload and the error surface still
- * call `redactSensitive(args)`; they now go through the same audit-scoped
- * redaction. No caller relied on the older "only mask credential keys"
- * behaviour in a way that would leak PHI — so it is safe to tighten here.
+ * Backward-compat alias kept ONLY for the fuzz/property tests that import
+ * it by name. Do NOT use in new production code — it defaults to
+ * `AUDIT_SAFE_RESPONSE_KEYS_SET`, which preserves response-only field names
+ * (`id`, `status`, `pages`, `completedAt`, `error`) and is therefore wrong
+ * for redacting *request* payloads. Call `redactForAudit` directly with the
+ * appropriate allowlist (`AUDIT_SAFE_ARG_KEYS_SET` for args,
+ * `AUDIT_SAFE_RESPONSE_KEYS_SET` for responses) instead.
  */
 export const redactSensitive = redactForAudit;
 
@@ -209,7 +212,12 @@ export function wrapToolHandler<TArgs>(
       const dryPayload = {
         dryRun: true,
         tool: toolName,
-        wouldCallWith: redactSensitive(args),
+        // args → use AUDIT_SAFE_ARG_KEYS_SET (the 2-key request allowlist).
+        // redactSensitive's default falls through to the 7-key response
+        // allowlist (id, status, pages, completedAt, error …), which would
+        // preserve response-only names on the request side if a future
+        // tool ever accepted an arg called `status` or `error`.
+        wouldCallWith: redactForAudit(args, AUDIT_SAFE_ARG_KEYS_SET),
         note: "FAXDROP_MCP_DRY_RUN=true; no actual fax was sent. Sensitive fields are redacted.",
       };
       return {
