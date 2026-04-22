@@ -25,25 +25,36 @@ describe("prompts: user-facing slash commands", () => {
     expect(names).toEqual(["fax-history-summary", "send-letter-fax"]);
   });
 
-  it("send-letter-fax has the documented args", async () => {
+  it("send-letter-fax has args aligned with faxdrop_send_fax", async () => {
     const { client } = await connect();
     const { prompts } = await client.listPrompts();
     const p = prompts.find((p) => p.name === "send-letter-fax");
     expect(p).toBeDefined();
     const argNames = (p?.arguments ?? []).map((a) => a.name).sort();
-    expect(argNames).toEqual(["coverNote", "faxNumber", "fileUrl"]);
+    expect(argNames).toEqual([
+      "coverNote",
+      "filePath",
+      "recipientNumber",
+      "senderEmail",
+      "senderName",
+    ]);
     const required = (p?.arguments ?? [])
       .filter((a) => a.required)
       .map((a) => a.name)
       .sort();
-    expect(required).toEqual(["faxNumber", "fileUrl"]);
+    expect(required).toEqual(["filePath", "recipientNumber", "senderEmail", "senderName"]);
   });
 
-  it("send-letter-fax mentions faxdrop_send_fax and the polling strategy", async () => {
+  it("send-letter-fax mentions faxdrop_send_fax with the real arg names + polling strategy", async () => {
     const { client } = await connect();
     const result = await client.getPrompt({
       name: "send-letter-fax",
-      arguments: { fileUrl: "https://example.com/a.pdf", faxNumber: "+18005551234" },
+      arguments: {
+        filePath: "/Users/me/FaxOutbox/invoice.pdf",
+        recipientNumber: "+18005551234",
+        senderName: "Alice",
+        senderEmail: "alice@example.com",
+      },
     });
     expect(result.messages).toHaveLength(1);
     const msg = result.messages[0];
@@ -52,8 +63,17 @@ describe("prompts: user-facing slash commands", () => {
     const text = (msg?.content as { text: string }).text;
     expect(text).toContain("faxdrop_send_fax");
     expect(text).toContain("faxdrop_get_fax_status");
-    expect(text).toContain("https://example.com/a.pdf");
+    expect(text).toContain("filePath");
+    expect(text).toContain("recipientNumber");
+    expect(text).toContain("senderName");
+    expect(text).toContain("senderEmail");
+    expect(text).toContain("/Users/me/FaxOutbox/invoice.pdf");
     expect(text).toContain("+18005551234");
+    expect(text).toContain("Alice");
+    expect(text).toContain("alice@example.com");
+    // Outbox safety hint is load-bearing — prompt must not tell the LLM to
+    // blindly call the tool with an arbitrary path.
+    expect(text.toLowerCase()).toContain("outbox");
   });
 
   it("send-letter-fax includes the cover note when provided", async () => {
@@ -61,13 +81,45 @@ describe("prompts: user-facing slash commands", () => {
     const result = await client.getPrompt({
       name: "send-letter-fax",
       arguments: {
-        fileUrl: "https://example.com/a.pdf",
-        faxNumber: "+18005551234",
+        filePath: "/Users/me/FaxOutbox/invoice.pdf",
+        recipientNumber: "+18005551234",
+        senderName: "Alice",
+        senderEmail: "alice@example.com",
         coverNote: "Please see attached invoice.",
       },
     });
     const text = (result.messages[0]?.content as { text: string }).text;
     expect(text).toContain("Please see attached invoice.");
+  });
+
+  it("send-letter-fax rejects missing required args (senderEmail)", async () => {
+    const { client } = await connect();
+    await expect(
+      client.getPrompt({
+        name: "send-letter-fax",
+        arguments: {
+          filePath: "/Users/me/FaxOutbox/invoice.pdf",
+          recipientNumber: "+18005551234",
+          senderName: "Alice",
+          // senderEmail missing → Zod validation must fail
+        },
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("send-letter-fax rejects a non-email senderEmail", async () => {
+    const { client } = await connect();
+    await expect(
+      client.getPrompt({
+        name: "send-letter-fax",
+        arguments: {
+          filePath: "/Users/me/FaxOutbox/invoice.pdf",
+          recipientNumber: "+18005551234",
+          senderName: "Alice",
+          senderEmail: "not-an-email",
+        },
+      }),
+    ).rejects.toThrow();
   });
 
   it("fax-history-summary iterates the provided fax IDs", async () => {
@@ -92,5 +144,14 @@ describe("prompts: user-facing slash commands", () => {
     const text = (result.messages[0]?.content as { text: string }).text;
     expect(text.toLowerCase()).toContain("terminal");
     expect(text.toLowerCase()).toContain("cache");
+  });
+
+  it("fax-history-summary rejects comma-only / whitespace-only input (no real IDs)", async () => {
+    const { client } = await connect();
+    for (const empty of [",", ",,", "  ", " , "]) {
+      await expect(
+        client.getPrompt({ name: "fax-history-summary", arguments: { faxIds: empty } }),
+      ).rejects.toThrow();
+    }
   });
 });

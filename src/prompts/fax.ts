@@ -13,28 +13,56 @@ import { z } from "zod";
  * does not re-discover them.
  */
 
-/** `/send-letter-fax` — send a PDF to a fax number with an optional cover note. */
+/**
+ * `/send-letter-fax` — send a document already placed in the outbox to a fax number.
+ *
+ * Arg names and shape mirror `faxdrop_send_fax` exactly so the LLM
+ * doesn't have to translate. The upstream tool rejects files outside
+ * the outbox (`FAXDROP_MCP_WORK_DIR` or `~/FaxOutbox/`), so the prompt
+ * hint explicitly tells the model to verify placement before sending.
+ */
 const SendLetterFaxArgs = {
-  fileUrl: z
+  filePath: z
     .string()
+    .min(1)
     .describe(
-      "HTTPS URL of the PDF (or DOCX/JPG/PNG) to fax. Must be publicly fetchable by FaxDrop — no auth-walled URLs.",
+      "Absolute path to the document to fax (PDF, DOCX, JPEG, PNG; ≤ 10MB). Must live inside the FaxDrop outbox directory (`FAXDROP_MCP_WORK_DIR` or `~/FaxOutbox/`). Files outside are rejected.",
     ),
-  faxNumber: z
+  recipientNumber: z
     .string()
+    .min(1)
     .describe(
-      "Destination fax number in E.164 (e.g. +18005551234) or an explicit country-code-prefixed national form. Local-only formats will be rejected.",
+      "Destination fax number in E.164 (e.g. `+18005551234`). Local-only formats are rejected by the tool.",
     ),
+  senderName: z.string().min(1).max(100).describe("Sender display name shown on the cover page."),
+  senderEmail: z.string().email().describe("Sender email shown on the cover page."),
   coverNote: z
     .string()
+    .max(500)
     .optional()
-    .describe("Optional short cover note prepended to the fax (max ~200 chars)."),
+    .describe(
+      "Optional cover-page note (max 500 chars). Only printed when the account includes a cover page.",
+    ),
 };
 
-/** `/fax-history-summary` — summarize recent fax statuses. */
+/**
+ * `/fax-history-summary` — summarize recent fax statuses.
+ *
+ * Schema uses a strict refinement so `","` or `"  "` don't pass as
+ * "valid but empty" and leave the LLM with nothing to iterate.
+ */
 const FaxHistorySummaryArgs = {
   faxIds: z
     .string()
+    .min(1)
+    .refine(
+      (s) =>
+        s
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean).length > 0,
+      "faxIds must contain at least one non-empty FaxDrop ID",
+    )
     .describe(
       "Comma-separated list of FaxDrop IDs to summarize (e.g. `fax_abc,fax_def,fax_ghi`). Each is polled via faxdrop_get_fax_status.",
     ),
@@ -46,21 +74,28 @@ export function registerFaxPrompts(server: McpServer): void {
     {
       title: "Send a letter as a fax",
       description:
-        "Send a PDF/DOCX/JPG/PNG to a fax number and poll delivery status until terminal.",
+        "Send a PDF/DOCX/JPG/PNG already placed in the outbox to a fax number and poll delivery status until terminal.",
       argsSchema: SendLetterFaxArgs,
     },
-    ({ fileUrl, faxNumber, coverNote }) => ({
-      description: `Send ${fileUrl} as a fax to ${faxNumber}`,
+    ({ filePath, recipientNumber, senderName, senderEmail, coverNote }) => ({
+      description: `Send ${filePath} as a fax to ${recipientNumber}`,
       messages: [
         {
           role: "user" as const,
           content: {
             type: "text" as const,
             text:
-              `Use the \`faxdrop_send_fax\` tool to send the document at ${fileUrl} ` +
-              `to fax number ${faxNumber}.` +
-              (coverNote ? ` Include this cover note verbatim: "${coverNote}".` : "") +
-              `\n\nOnce the fax is submitted and you have the returned \`faxId\`, ` +
+              `Call \`faxdrop_send_fax\` with:\n` +
+              `  - filePath: "${filePath}"\n` +
+              `  - recipientNumber: "${recipientNumber}"\n` +
+              `  - senderName: "${senderName}"\n` +
+              `  - senderEmail: "${senderEmail}"\n` +
+              (coverNote ? `  - coverNote: "${coverNote}"\n` : "") +
+              `\nBefore calling: confirm the file lives inside the outbox ` +
+              `(\`FAXDROP_MCP_WORK_DIR\` or \`~/FaxOutbox/\`). Files outside the ` +
+              `outbox are rejected by the tool for safety — if the user referenced ` +
+              `a file elsewhere, ask them to move or copy it into the outbox first.\n\n` +
+              `Once the fax is submitted and you have the returned \`faxId\`, ` +
               `poll \`faxdrop_get_fax_status\` every ~5 seconds for the first 2 minutes, ` +
               `then every ~30 seconds for up to 10 minutes, and stop as soon as ` +
               `status is terminal (\`delivered\`, \`failed\`, or \`partial\`). ` +
