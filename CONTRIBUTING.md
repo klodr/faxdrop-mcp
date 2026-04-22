@@ -11,7 +11,7 @@ PRs welcome.
 
 ## Developer Certificate of Origin
 
-Every commit carries a `Signed-off-by:` trailer — adding it (automatic with `git commit -s` or our prepare-commit-msg hook) certifies the [DCO 1.1](https://developercertificate.org/).
+Every commit must carry a `Signed-off-by:` trailer to certify compliance with [DCO 1.1](https://developercertificate.org/). The trailer is added automatically by `git commit -s` or our prepare-commit-msg hook.
 
 ## Releases (maintainers only)
 
