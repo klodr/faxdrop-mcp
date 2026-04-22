@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { FAX_NUMBER, EMAIL } from "../tools/fax.js";
 
 /**
  * Two user-facing slash commands exposed through MCP's prompt API
@@ -28,14 +29,13 @@ const SendLetterFaxArgs = {
     .describe(
       "Absolute path to the document to fax (PDF, DOCX, JPEG, PNG; ≤ 10MB). Must live inside the FaxDrop outbox directory (`FAXDROP_MCP_WORK_DIR` or `~/FaxOutbox/`). Files outside are rejected.",
     ),
-  recipientNumber: z
-    .string()
-    .min(1)
-    .describe(
-      "Destination fax number in E.164 (e.g. `+18005551234`). Local-only formats are rejected by the tool.",
-    ),
+  // Reuse the tool-level validators so the prompt acceptance and the
+  // tool acceptance cannot drift. If `FAX_NUMBER` gets tightened (country
+  // whitelist, E.164 regex, length cap) or `EMAIL` is swapped for a
+  // stricter validator, both the prompt and the tool move together.
+  recipientNumber: FAX_NUMBER,
   senderName: z.string().min(1).max(100).describe("Sender display name shown on the cover page."),
-  senderEmail: z.string().email().describe("Sender email shown on the cover page."),
+  senderEmail: EMAIL,
   coverNote: z
     .string()
     .max(500)
@@ -90,7 +90,12 @@ export function registerFaxPrompts(server: McpServer): void {
               `  - recipientNumber: "${recipientNumber}"\n` +
               `  - senderName: "${senderName}"\n` +
               `  - senderEmail: "${senderEmail}"\n` +
-              (coverNote ? `  - coverNote: "${coverNote}"\n` : "") +
+              // coverNote is silently dropped by the tool unless includeCover
+              // is true (see `src/tools/fax.ts` — cover-page fields are only
+              // applied under the `includeCover` gate). If the caller gave
+              // us a note, we also force includeCover so the note actually
+              // renders.
+              (coverNote ? `  - includeCover: true\n` + `  - coverNote: "${coverNote}"\n` : "") +
               `\nBefore calling: confirm the file lives inside the outbox ` +
               `(\`FAXDROP_MCP_WORK_DIR\` or \`~/FaxOutbox/\`). Files outside the ` +
               `outbox are rejected by the tool for safety — if the user referenced ` +

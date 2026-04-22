@@ -17,7 +17,7 @@ import { getCachedStatus, maybeCacheStatus } from "../status-cache.js";
 // (parse / type / country / gate). A Zod refine here would re-parse the
 // same string with no extra information, just so the error reaches the
 // caller through Zod instead of through the handler. Skip it.
-const FAX_NUMBER = z
+export const FAX_NUMBER = z
   .string()
   .min(1)
   .describe(
@@ -31,7 +31,7 @@ const SENDER_PHONE = z
   })
   .describe("Sender callback number shown on the cover page (E.164 format).");
 
-const EMAIL = z.string().email().describe("Sender email for delivery confirmation.");
+export const EMAIL = z.string().email().describe("Sender email for delivery confirmation.");
 
 export function registerFaxTools(server: McpServer, client: FaxDropClient): void {
   defineTool(

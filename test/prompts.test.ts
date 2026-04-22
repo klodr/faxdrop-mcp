@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { createServer } from "../server.js";
+import { createServer } from "../src/server.js";
 
 describe("prompts: user-facing slash commands", () => {
   async function connect() {
@@ -76,7 +76,10 @@ describe("prompts: user-facing slash commands", () => {
     expect(text.toLowerCase()).toContain("outbox");
   });
 
-  it("send-letter-fax includes the cover note when provided", async () => {
+  it("send-letter-fax includes the cover note AND forces includeCover:true when a note is provided", async () => {
+    // Regression for a CR finding: the fax tool silently drops coverNote
+    // unless includeCover is true. The prompt must force the gate when it
+    // asks the LLM to pass a cover note, otherwise paid accounts lose it.
     const { client } = await connect();
     const result = await client.getPrompt({
       name: "send-letter-fax",
@@ -90,6 +93,23 @@ describe("prompts: user-facing slash commands", () => {
     });
     const text = (result.messages[0]?.content as { text: string }).text;
     expect(text).toContain("Please see attached invoice.");
+    expect(text).toContain("includeCover: true");
+  });
+
+  it("send-letter-fax does NOT mention includeCover when no cover note is given", async () => {
+    const { client } = await connect();
+    const result = await client.getPrompt({
+      name: "send-letter-fax",
+      arguments: {
+        filePath: "/Users/me/FaxOutbox/invoice.pdf",
+        recipientNumber: "+18005551234",
+        senderName: "Alice",
+        senderEmail: "alice@example.com",
+      },
+    });
+    const text = (result.messages[0]?.content as { text: string }).text;
+    expect(text).not.toContain("includeCover");
+    expect(text).not.toContain("coverNote");
   });
 
   it("send-letter-fax rejects missing required args (senderEmail)", async () => {
