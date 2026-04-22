@@ -27,13 +27,12 @@ export function isDryRun(): boolean {
 }
 
 /**
- * Lower-case names of fields that must never appear in audit logs, dry-run
- * payloads, or error responses. Exported so test/fuzz.test.ts uses the
- * canonical list (avoids drift between implementation and properties).
+ * Lower-case names of fields that are fully redacted to `[REDACTED]` as a
+ * defense-in-depth layer — these never appear in logs regardless of
+ * allowlist rules. API keys & co.
  *
- * Frozen at runtime: `as const` only widens the type, so without
- * Object.freeze the exported array would still be mutable from outside the
- * module. Freezing locks it down at runtime too.
+ * Exported so test/fuzz.test.ts uses the canonical list (avoids drift).
+ * Frozen at runtime because `as const` only widens the type.
  */
 export const SENSITIVE_KEYS = Object.freeze([
   "apikey",
@@ -46,20 +45,85 @@ export const SENSITIVE_KEYS = Object.freeze([
 
 const SENSITIVE_KEYS_SET: ReadonlySet<string> = new Set(SENSITIVE_KEYS);
 
-export function redactSensitive(value: unknown): unknown {
+/**
+ * Keys that ARE surfaced in the audit log, in clear. Intentionally narrow:
+ * this is the intersection of "fields the FaxDrop API returns in its
+ * response" and "operational metadata needed to reconstruct a delivery
+ * receipt". Anything absent from this set is elided — so a prompt-injected
+ * cover note, a leaking filesystem path, or a sender email never lands in
+ * the audit log.
+ *
+ * The list mirrors the FaxDrop status response shape verbatim:
+ *   { id, status, recipientNumber, pages, completedAt, error }
+ * plus `faxId` (the args-side name for the same `id` on status polls).
+ */
+export const AUDIT_SAFE_KEYS = Object.freeze([
+  "recipientNumber", // delivery receipt: where the fax went
+  "faxId", // args-side name for the response `id` field
+  "id", // response-side name
+  "status", // queued | sending | delivered | failed | partial
+  "pages", // page count on completion
+  "completedAt", // ISO timestamp on completion
+  "error", // error message on failure
+] as const);
+
+const AUDIT_SAFE_KEYS_SET: ReadonlySet<string> = new Set(AUDIT_SAFE_KEYS);
+
+/**
+ * Redact a value for the audit log using an allowlist strategy:
+ *
+ *   - keys in AUDIT_SAFE_KEYS (the FaxDrop response fields) are kept in clear
+ *   - keys in SENSITIVE_KEYS are replaced with "[REDACTED]"
+ *   - everything else is elided with a length marker so a reader sees that
+ *     a field was present without seeing its contents:
+ *       "filePath":  "[ELIDED:42 chars]"
+ *       "coverNote": "[ELIDED:137 chars]"
+ *       "attachments": "[ELIDED:3 items]"
+ *
+ * The goal: the audit log records the delivery receipt (who we faxed, what
+ * the API said about it) but never leaks the message content, the sender's
+ * identity, or the local filesystem paths that carried the payload. A
+ * single regex pass can show "was fax X delivered to +1212…?" without
+ * exposing the letter body or the ops setup.
+ */
+export function redactForAudit(value: unknown): unknown {
   if (value === null || typeof value !== "object") return value;
-  if (Array.isArray(value)) return value.map(redactSensitive);
+  if (Array.isArray(value)) return `[ELIDED:${value.length} items]`;
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-    out[k] = SENSITIVE_KEYS_SET.has(k.toLowerCase()) ? "[REDACTED]" : redactSensitive(v);
+    const lower = k.toLowerCase();
+    if (SENSITIVE_KEYS_SET.has(lower)) {
+      out[k] = "[REDACTED]";
+    } else if (AUDIT_SAFE_KEYS_SET.has(k)) {
+      // Pass through; still recurse so nested objects also follow the rule.
+      out[k] = typeof v === "object" && v !== null ? redactForAudit(v) : v;
+    } else if (typeof v === "string") {
+      out[k] = `[ELIDED:${v.length} chars]`;
+    } else if (Array.isArray(v)) {
+      out[k] = `[ELIDED:${v.length} items]`;
+    } else if (typeof v === "object") {
+      out[k] = "[ELIDED]";
+    } else {
+      // boolean / number / null / undefined: safe to keep as a type marker
+      out[k] = `[ELIDED:${typeof v}]`;
+    }
   }
   return out;
 }
+
+/**
+ * Backward-compat alias. The dry-run payload and the error surface still
+ * call `redactSensitive(args)`; they now go through the same audit-scoped
+ * redaction. No caller relied on the older "only mask credential keys"
+ * behaviour in a way that would leak PHI — so it is safe to tighten here.
+ */
+export const redactSensitive = redactForAudit;
 
 export function logAudit(
   toolName: string,
   args: unknown,
   result: "ok" | "dry-run" | "error",
+  response?: unknown,
 ): void {
   const path = process.env.FAXDROP_MCP_AUDIT_LOG;
   if (!path) return;
@@ -71,7 +135,8 @@ export function logAudit(
     ts: new Date().toISOString(),
     tool: toolName,
     result,
-    args: redactSensitive(args),
+    args: redactForAudit(args),
+    ...(response !== undefined ? { response: redactForAudit(response) } : {}),
   });
   try {
     appendFileSync(path, entry + "\n", { mode: 0o600 });
@@ -125,7 +190,7 @@ export function wrapToolHandler<TArgs>(
 
     try {
       const result = await handler(args);
-      if (isWriteOp) logAudit(toolName, args, "ok");
+      if (isWriteOp) logAudit(toolName, args, "ok", result.structuredContent);
       return result;
     } catch (err) {
       logAudit(toolName, args, "error");

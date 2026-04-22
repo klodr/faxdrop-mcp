@@ -114,11 +114,12 @@ describe("Middleware", () => {
     });
   });
 
-  describe("redactSensitive", () => {
+  describe("redactSensitive (allowlist: FaxDrop response fields only)", () => {
     it("redacts top-level sensitive keys (case-insensitive)", () => {
+      // Credential-style keys get "[REDACTED]"; non-response keys get elided
       expect(redactSensitive({ apiKey: "fd_live_xxx", senderName: "Bob" })).toEqual({
         apiKey: "[REDACTED]",
-        senderName: "Bob",
+        senderName: "[ELIDED:3 chars]",
       });
       expect(redactSensitive({ APIKey: "x" })).toEqual({ APIKey: "[REDACTED]" });
       expect(redactSensitive({ Authorization: "Bearer abc" })).toEqual({
@@ -127,21 +128,50 @@ describe("Middleware", () => {
       expect(redactSensitive({ "X-API-Key": "x" })).toEqual({ "X-API-Key": "[REDACTED]" });
     });
 
-    it("recursively redacts nested objects", () => {
-      const input = { wrapper: { creds: { password: "p@ss", username: "alice" } } };
-      const out = redactSensitive(input) as {
-        wrapper: { creds: { password: string; username: string } };
+    it("passes through ONLY the FaxDrop response fields (recipientNumber, faxId, status, …)", () => {
+      const input = {
+        recipientNumber: "+12125551234",
+        faxId: "fax_abc123",
+        id: "fax_abc123",
+        status: "delivered",
+        pages: 3,
+        completedAt: "2026-04-22T10:15:00Z",
+        error: null,
       };
-      expect(out.wrapper.creds.password).toBe("[REDACTED]");
-      expect(out.wrapper.creds.username).toBe("alice");
+      // Every field is in AUDIT_SAFE_KEYS → kept verbatim
+      expect(redactSensitive(input)).toEqual(input);
     });
 
-    it("walks arrays", () => {
+    it("elides sender / filePath / coverNote even though they are not credentials", () => {
+      const input = {
+        filePath: "/Users/me/FaxOutbox/invoice.pdf",
+        senderName: "Alice",
+        senderEmail: "alice@example.com",
+        coverNote: "Please see attached invoice.",
+        recipientNumber: "+12125551234", // this one IS kept
+      };
+      const out = redactSensitive(input) as Record<string, unknown>;
+      expect(out.filePath).toMatch(/^\[ELIDED:\d+ chars\]$/);
+      expect(out.senderName).toMatch(/^\[ELIDED:\d+ chars\]$/);
+      expect(out.senderEmail).toMatch(/^\[ELIDED:\d+ chars\]$/);
+      expect(out.coverNote).toMatch(/^\[ELIDED:\d+ chars\]$/);
+      expect(out.recipientNumber).toBe("+12125551234");
+    });
+
+    it("recursively redacts nested credential keys while eliding other nested fields", () => {
+      const input = { wrapper: { creds: { password: "p@ss", username: "alice" } } };
+      const out = redactSensitive(input) as {
+        wrapper: unknown;
+      };
+      // wrapper is not in AUDIT_SAFE_KEYS → its value gets elided whole
+      expect(out.wrapper).toBe("[ELIDED]");
+    });
+
+    it("elides arrays with a length marker (does not walk them)", () => {
       const input = [{ token: "t1" }, { token: "t2", safe: "x" }];
-      expect(redactSensitive(input)).toEqual([
-        { token: "[REDACTED]" },
-        { token: "[REDACTED]", safe: "x" },
-      ]);
+      // Top-level array → elided with length. Tool args are objects at the
+      // top level in practice; arrays inside those objects get the same marker.
+      expect(redactSensitive(input)).toBe("[ELIDED:2 items]");
     });
 
     it("returns primitives and null unchanged", () => {
@@ -149,6 +179,15 @@ describe("Middleware", () => {
       expect(redactSensitive(42)).toBe(42);
       expect(redactSensitive(null)).toBe(null);
       expect(redactSensitive(undefined)).toBe(undefined);
+    });
+
+    it("elides non-string primitives inside objects with a type marker", () => {
+      // null typeof is "object" → falls into the object branch → "[ELIDED]"
+      const input = { includeCover: true, pageCount: 3, maybeNull: null };
+      const out = redactSensitive(input) as Record<string, unknown>;
+      expect(out.includeCover).toBe("[ELIDED:boolean]");
+      expect(out.pageCount).toBe("[ELIDED:number]");
+      expect(out.maybeNull).toBe("[ELIDED]");
     });
   });
 
