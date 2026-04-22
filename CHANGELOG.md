@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-04-22
+
+### Fixed (supply-chain)
+
+- **Signed SBOM bundles are now actually uploaded to each Release.** The two `actions/attest` steps that sign the SPDX and CycloneDX SBOMs lacked `id:` fields in 0.3.5, so their `bundle-path` outputs could not be referenced — only the unsigned `sbom.*.json` files ended up on the 0.3.5 Release. With 0.3.6: `id: attest_spdx` + `id: attest_cdx` are declared, their bundles are copied to `dist/sbom.spdx.sigstore` + `dist/sbom.cdx.sigstore`, and both are uploaded alongside the JSON SBOMs. The verification path documented in `SECURITY.md` (`gh attestation verify index.js --predicate-type https://spdx.dev/Document/v2.3 --repo klodr/faxdrop-mcp`) now works. **`dist/index.js` is byte-identical to 0.3.5**; this release exists only to correct the Release assets.
+
 ## [0.3.5] - 2026-04-22
 
 ### Added
