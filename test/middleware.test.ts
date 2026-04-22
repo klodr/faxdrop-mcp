@@ -189,6 +189,30 @@ describe("Middleware", () => {
       expect(out.pageCount).toBe("[ELIDED:number]");
       expect(out.maybeNull).toBe("[ELIDED]");
     });
+
+    it("recurses into nested objects when the key is in the safe set", () => {
+      // When a safe-keyed value is itself an object, the redactor must
+      // recurse into it so the allowlist applies at every depth.
+      const input = {
+        recipientNumber: {
+          id: "fax_abc", // safe → kept
+          coverNote: "secret note", // not safe → elided
+        },
+      };
+      const out = redactSensitive(input) as Record<string, unknown>;
+      const nested = out.recipientNumber as Record<string, unknown>;
+      expect(nested.id).toBe("fax_abc");
+      expect(nested.coverNote).toMatch(/^\[ELIDED:\d+ chars\]$/);
+    });
+
+    it("elides a nested array value with a length marker", () => {
+      // Nested array branch — different code path from the top-level
+      // array branch (which returns a string directly). A non-safe key
+      // whose value is an array must be elided to `[ELIDED:N items]`.
+      const input = { attachments: ["/tmp/a.pdf", "/tmp/b.pdf", "/tmp/c.pdf"] };
+      const out = redactSensitive(input) as Record<string, unknown>;
+      expect(out.attachments).toBe("[ELIDED:3 items]");
+    });
   });
 
   describe("logAudit", () => {
