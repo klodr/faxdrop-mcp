@@ -46,28 +46,51 @@ export const SENSITIVE_KEYS = Object.freeze([
 const SENSITIVE_KEYS_SET: ReadonlySet<string> = new Set(SENSITIVE_KEYS);
 
 /**
- * Keys that ARE surfaced in the audit log, in clear. Intentionally narrow:
- * this is the intersection of "fields the FaxDrop API returns in its
- * response" and "operational metadata needed to reconstruct a delivery
- * receipt". Anything absent from this set is elided — so a prompt-injected
- * cover note, a leaking filesystem path, or a sender email never lands in
- * the audit log.
+ * Keys that ARE surfaced in the audit log, in clear.
  *
- * The list mirrors the FaxDrop status response shape verbatim:
- *   { id, status, recipientNumber, pages, completedAt, error }
- * plus `faxId` (the args-side name for the same `id` on status polls).
+ * Split by payload surface: request args and API response have different
+ * acceptable field sets. Applying the response-side allowlist to an args
+ * payload would let a future write tool that happens to accept a `status`
+ * or `error` arg leak it in clear through the audit log. Keeping the args
+ * list strict (`recipientNumber`, `faxId`) forces any new arg field to be
+ * an explicit review decision, not an accidental pass-through.
+ *
+ * Anything absent from the relevant set is elided — so a prompt-injected
+ * cover note, a leaking filesystem path, or a sender email never lands
+ * in the audit log regardless of which side carries it.
  */
-export const AUDIT_SAFE_KEYS = Object.freeze([
+
+/** Args-side allowlist: ONLY fields we also need to correlate the receipt. */
+export const AUDIT_SAFE_ARG_KEYS = Object.freeze([
   "recipientNumber", // delivery receipt: where the fax went
-  "faxId", // args-side name for the response `id` field
-  "id", // response-side name
+  "faxId", // status-poll args reference the fax by id
+] as const);
+
+/**
+ * Response-side allowlist: the FaxDrop status-response shape verbatim —
+ *   { id, status, recipientNumber, pages, completedAt, error }
+ * — this IS the delivery receipt, and logging it in clear is the whole
+ * point of the audit trail.
+ */
+export const AUDIT_SAFE_RESPONSE_KEYS = Object.freeze([
+  "recipientNumber",
+  "faxId",
+  "id", // response-side name for faxId
   "status", // queued | sending | delivered | failed | partial
   "pages", // page count on completion
   "completedAt", // ISO timestamp on completion
   "error", // error message on failure
 ] as const);
 
-const AUDIT_SAFE_KEYS_SET: ReadonlySet<string> = new Set(AUDIT_SAFE_KEYS);
+const AUDIT_SAFE_ARG_KEYS_SET: ReadonlySet<string> = new Set(AUDIT_SAFE_ARG_KEYS);
+const AUDIT_SAFE_RESPONSE_KEYS_SET: ReadonlySet<string> = new Set(AUDIT_SAFE_RESPONSE_KEYS);
+
+/**
+ * @deprecated Kept for the fuzz/property tests that import it. New code
+ * should pick `AUDIT_SAFE_ARG_KEYS` or `AUDIT_SAFE_RESPONSE_KEYS` explicitly
+ * via the second arg to `redactForAudit`.
+ */
+export const AUDIT_SAFE_KEYS = AUDIT_SAFE_RESPONSE_KEYS;
 
 /**
  * Redact a value for the audit log using an allowlist strategy:
@@ -86,7 +109,10 @@ const AUDIT_SAFE_KEYS_SET: ReadonlySet<string> = new Set(AUDIT_SAFE_KEYS);
  * single regex pass can show "was fax X delivered to +1212…?" without
  * exposing the letter body or the ops setup.
  */
-export function redactForAudit(value: unknown): unknown {
+export function redactForAudit(
+  value: unknown,
+  safeKeys: ReadonlySet<string> = AUDIT_SAFE_RESPONSE_KEYS_SET,
+): unknown {
   if (value === null || typeof value !== "object") return value;
   if (Array.isArray(value)) return `[ELIDED:${value.length} items]`;
   const out: Record<string, unknown> = {};
@@ -94,9 +120,11 @@ export function redactForAudit(value: unknown): unknown {
     const lower = k.toLowerCase();
     if (SENSITIVE_KEYS_SET.has(lower)) {
       out[k] = "[REDACTED]";
-    } else if (AUDIT_SAFE_KEYS_SET.has(k)) {
-      // Pass through; still recurse so nested objects also follow the rule.
-      out[k] = typeof v === "object" && v !== null ? redactForAudit(v) : v;
+    } else if (safeKeys.has(k)) {
+      // Pass through; still recurse so nested objects also follow the
+      // rule — propagate the same safeKeys set so the args / response
+      // distinction is preserved deep in the structure.
+      out[k] = typeof v === "object" && v !== null ? redactForAudit(v, safeKeys) : v;
     } else if (typeof v === "string") {
       out[k] = `[ELIDED:${v.length} chars]`;
     } else if (Array.isArray(v)) {
@@ -135,8 +163,10 @@ export function logAudit(
     ts: new Date().toISOString(),
     tool: toolName,
     result,
-    args: redactForAudit(args),
-    ...(response !== undefined ? { response: redactForAudit(response) } : {}),
+    args: redactForAudit(args, AUDIT_SAFE_ARG_KEYS_SET),
+    ...(response !== undefined
+      ? { response: redactForAudit(response, AUDIT_SAFE_RESPONSE_KEYS_SET) }
+      : {}),
   });
   try {
     appendFileSync(path, entry + "\n", { mode: 0o600 });
