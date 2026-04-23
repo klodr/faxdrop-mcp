@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (BREAKING)
+
+- **Node.js floor: `>=22.11`** (was `>=20.11`). Node 20 reaches end of Active LTS on 2026-04-30; keeping the floor there would ship the package on an unmaintained runtime the day after. `22.11.0` is the LTS-tagged entry point for the Node 22 "Jod" line (released October 2024), which runs maintenance until 2027-04-30 — one year of headroom. Pinning to the LTS-tag floor rather than `>=22.0.0` skips the pre-LTS v22.0–v22.10 releases. Aligned with the sibling repos `klodr/gmail-mcp` and `klodr/mercury-invoicing-mcp`, all moving to the same floor.
+- **Compile target: `ES2024`** (was `ES2023`). Node 22 implements the full ES2024 surface — `target` and `lib` now match.
+- **Bundle target: `tsup target: node22`** (was `node20`) so the shipped `dist/index.js` actually takes advantage of the higher floor.
+
+### Changed
+
+- `@types/node` bumped from `^20.19.39` to `^22.19.17`.
+- CI matrix dropped Node 20 — builds now run on Node 22 + 24. The coverage upload step (Codecov) moved from Node 20 to Node 22.
+- Release and verify-release workflows set up Node 22. All CI/release workflow step names updated from "Setup Node 20" to "Setup Node 22".
+- Dockerfile base image pinned to `node:22-alpine@sha256:8ea2348b068a9544dae7317b4f3aafcdc032df1647bb7d768a05a5cad1a7683f`.
+- `llms-install.md` prerequisite updated to **Node.js ≥ 22**.
+- `.github/dependabot.yml` `@types/node` major-version-clamp comment aligned to the new `>=22.11` floor.
+- `.github/ISSUE_TEMPLATE/bug_report.yml` Node version placeholder updated from `20.10.0` to `22.12.0`.
+- `ROADMAP.md` — the completed "Node.js 22 migration — deadline 2026-04-30" roadmap item is removed now that the migration has landed.
+
 ## [0.3.6] - 2026-04-22
 
 ### Fixed (supply-chain)

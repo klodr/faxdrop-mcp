@@ -9,15 +9,7 @@ const __dirname = import.meta.dirname;
 
 export default tseslint.config(
   {
-    ignores: [
-      "dist/",
-      "coverage/",
-      "node_modules/",
-      "test/",
-      "scripts/",
-      "*.mjs",
-      "*.config.*",
-    ],
+    ignores: ["dist/", "coverage/", "node_modules/", "test/", "scripts/", "*.mjs", "*.config.*"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -31,7 +23,7 @@ export default tseslint.config(
     },
     rules: {
       // High-value additions over `recommendedTypeChecked`:
-      "eqeqeq": ["error", "always"],
+      eqeqeq: ["error", "always"],
       "no-console": ["warn", { allow: ["error", "warn"] }],
       // The recommendedTypeChecked preset already enables:
       // - @typescript-eslint/no-floating-promises
