@@ -178,6 +178,37 @@ export function logAudit(
   }
 }
 
+/**
+ * `logAudit` that never throws — wraps the call in a try/catch and
+ * routes any audit failure to stderr. Used on every code path in
+ * `wrapToolHandler` where a throw from the audit log would override a
+ * more-important exception: the dry-run early-return (whose payload
+ * would be replaced by the audit throw), the `ok` success path (a
+ * throw would break a successful MCP call), and the `error` catch
+ * before the `FaxDropError` mapping (where the audit event must not
+ * mask the underlying bug).
+ *
+ * `logAudit` already swallows its own `appendFileSync` failures (the
+ * try/catch directly above), so this is defence in depth against the
+ * two remaining failure paths inside `logAudit`: `JSON.stringify` on
+ * a circular `args` or `response` shape and the date formatter.
+ *
+ * Mirrors the helper in sibling repos `klodr/gmail-mcp/src/middleware.ts`
+ * and `klodr/mercury-invoicing-mcp/src/middleware.ts`.
+ */
+function safeLogAudit(
+  toolName: string,
+  args: unknown,
+  result: "ok" | "dry-run" | "error",
+  response?: unknown,
+): void {
+  try {
+    logAudit(toolName, args, result, response);
+  } catch (auditErr) {
+    console.error(`[middleware] audit log failed for ${toolName}:`, (auditErr as Error).message);
+  }
+}
+
 export type ToolResult = {
   content: { type: "text"; text: string }[];
   /**
@@ -208,7 +239,7 @@ export function wrapToolHandler<TArgs>(
 
   return async (args: TArgs): Promise<ToolResult> => {
     if (isWriteOp && isDryRun()) {
-      logAudit(toolName, args, "dry-run");
+      safeLogAudit(toolName, args, "dry-run");
       const dryPayload = {
         dryRun: true,
         tool: toolName,
@@ -228,10 +259,10 @@ export function wrapToolHandler<TArgs>(
 
     try {
       const result = await handler(args);
-      if (isWriteOp) logAudit(toolName, args, "ok", result.structuredContent);
+      if (isWriteOp) safeLogAudit(toolName, args, "ok", result.structuredContent);
       return result;
     } catch (err) {
-      logAudit(toolName, args, "error");
+      safeLogAudit(toolName, args, "error");
       if (err instanceof FaxDropError) {
         const hint =
           err.status === 402

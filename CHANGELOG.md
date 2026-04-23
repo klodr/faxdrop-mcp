@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Audit throws no longer mask handler errors** (Qodo finding backported from `klodr/gmail-mcp#48`). A `logAudit(...)` call in the `finally` or `catch` would override the handler's own exception per JS/TS semantics — so a full-disk or a circular-`args` `JSON.stringify` throw inside the audit helper could erase the root cause from the caller. Introduces a local `safeLogAudit` wrapper that swallows any audit-side exception to stderr and applies it to all three terminal audit paths (`dry-run` early-return, `ok` success path, `error` in catch before the `FaxDropError` mapping).
+
 ## [0.3.8] - 2026-04-23
 
 ### Fixed
