@@ -5,11 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **CI `Upload test results to Codecov` guard** — the step now reads `if: ${{ always() && matrix.node == '22' && !cancelled() }}`. The prior `if: matrix.node == '22' && !cancelled()` was ambiguous: `!cancelled()` alone does replace the implicit `success()` check in GitHub Actions expression semantics, but the ambiguity is enough that failed test runs were at risk of being filtered out of Test Analytics — defeating the entire point of the upload (seeing flaky-test patterns on red builds). Explicit `always()` makes the "upload on failure" behaviour load-bearing in the YAML itself. Mirrors the sibling-repo fix landing on `klodr/mercury-invoicing-mcp#78`.
+
 ## [0.3.7] - 2026-04-23
 
 ### Added
 
-- **Codecov Test Analytics wiring** — vitest emits a `test-results.junit.xml` alongside its default human reporter, and CI uploads it via `codecov/test-results-action@v1.2.1` (pinned by full SHA). Gives us the "Tests" dashboard on codecov.io: per-suite flaky-test detection, slowest tests, per-test failure history. Upload runs only on the Node 22 matrix leg with `!cancelled()` so a test failure still surfaces the report. XML file is gitignored and absent from `package.json#files` — it never ships to npm.
+- **Codecov Test Analytics wiring** — vitest emits a `test-results.junit.xml` alongside its default human reporter, and CI uploads it via `codecov/codecov-action@v6.0.0` (pinned by full SHA) invoked with `report_type: test_results` — the standalone `codecov/test-results-action@v1.2.1` is deprecated in favour of the unified action. Gives us the "Tests" dashboard on codecov.io: per-suite flaky-test detection, slowest tests, per-test failure history. Upload runs only on the Node 22 matrix leg with `!cancelled()` so a test failure still surfaces the report. XML file is gitignored and absent from `package.json#files` — it never ships to npm.
 
 ### Changed (BREAKING)
 
