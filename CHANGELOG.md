@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (BREAKING)
+
+- **Node.js floor: `>=22`** (was `>=20.11`). Node 20 reaches end of Active LTS on 2026-04-30; keeping the floor there would ship the package on an unmaintained runtime the day after. Active-LTS Node 22 runs maintenance until 2027-04-30. Aligned with the sibling repos `klodr/gmail-mcp` (since v0.9.1) and `klodr/mercury-invoicing-mcp` (since v0.9.1).
+- **Compile target: `ES2024`** (was `ES2023`). Node 22 implements the full ES2024 surface — `target` and `lib` now match.
+- **Bundle target: `tsup target: node22`** (was `node20`) so the shipped `dist/index.js` actually takes advantage of the higher floor.
+
+### Changed
+
+- `@types/node` bumped from `^20.19.39` to `^22.19.17`.
+- CI matrix dropped Node 20 — builds now run on Node 22 + 24. The coverage upload step (Codecov) moved from Node 20 to Node 22.
+- Release and verify-release workflows set up Node 22.
+- Dockerfile base image pinned to `node:22-alpine@sha256:8ea2348b068a9544dae7317b4f3aafcdc032df1647bb7d768a05a5cad1a7683f`.
+
 ## [0.3.6] - 2026-04-22
 
 ### Fixed (supply-chain)
