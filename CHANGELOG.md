@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Node.js floor bumped to `>=22.22`** (was `>=22.11`). Node 22.22.2 ships security fixes for seven CVEs, including two high-severity ones (TLS/SNI callback handling and HTTP header validation). The 22.22.x line is the current in-maintenance LTS patch train; pinning the floor there gives users a known-patched runtime instead of the pre-CVE 22.11 baseline. Aligned with the sibling repos `klodr/gmail-mcp`, `klodr/mercury-invoicing-mcp`, and the private `klodr/relayfi-mcp`, all moving to `>=22.22` in the same pass. `.github/dependabot.yml` `@types/node` major-clamp comment updated to reflect the new floor.
+
 ### Fixed
 
 - **Audit throws no longer mask handler errors** (Qodo finding backported from `klodr/gmail-mcp#48`). A `logAudit(...)` call in the `finally` or `catch` would override the handler's own exception per JS/TS semantics — `appendFileSync` failures (full disk / EACCES) are already swallowed inside `logAudit`, but the pre-write paths are not: `redactForAudit` walking an unexpected shape, `JSON.stringify` on a circular `args`/`response`, or a `new Date().toISOString()` throw can all bubble up and erase the handler's root cause from the caller. Introduces a local `safeLogAudit` wrapper that swallows any audit-side exception to stderr and applies it to all three terminal audit paths (`dry-run` early-return, `ok` success path, `error` in catch before the `FaxDropError` mapping).
