@@ -48,7 +48,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "engines": {
-    "node": ">=22.11"
+    "node": ">=22.22.2"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
