@@ -5,11 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.8] - 2026-04-23
 
 ### Fixed
 
 - **CI `Upload test results to Codecov` guard** — the step now reads `if: ${{ always() && matrix.node == '22' && !cancelled() }}`. The prior `if: matrix.node == '22' && !cancelled()` was ambiguous: `!cancelled()` alone does replace the implicit `success()` check in GitHub Actions expression semantics, but the ambiguity is enough that failed test runs were at risk of being filtered out of Test Analytics — defeating the entire point of the upload (seeing flaky-test patterns on red builds). Explicit `always()` makes the "upload on failure" behaviour load-bearing in the YAML itself. Mirrors the sibling-repo fix landing on `klodr/mercury-invoicing-mcp#78`.
+- **README CodeRabbit badge URL** — dropped the `utm_source=oss&utm_medium=github&utm_campaign=klodr%2Ffaxdrop-mcp&` prefix from the `img.shields.io/coderabbit/prs/...` badge URL. Those params are what CodeRabbit's "embed this badge" snippet proposes by default, but shields.io doesn't interpret them — they only serve to give the URL a unique signature from the other sibling-repo badges, which means GitHub's camo image proxy caches each variant independently. When the upstream CodeRabbit endpoint returned a transient `provider or repo not found` at camo's initial fetch, that error SVG got cached and kept rendering while the sibling-repo badge (with a different URL) rendered fine. Dropping the utm params aligns the badge URL with the form used on `klodr/gmail-mcp` and invalidates the stale camo cache on the next README render.
 
 ## [0.3.7] - 2026-04-23
 
