@@ -97,6 +97,27 @@ describe("Middleware", () => {
       await expect(wrapped({})).rejects.toThrow("unexpected");
     });
 
+    it("audits as `error` when handler returns isError:true (business error)", async () => {
+      const tmpDir = mkdtempSync(join(tmpdir(), "faxdrop-audit-iserror-"));
+      const auditPath = join(tmpDir, "audit.log");
+      try {
+        process.env.FAXDROP_MCP_AUDIT_LOG = auditPath;
+        const handler = vi.fn(async () => ({
+          content: [{ type: "text" as const, text: "handler-surfaced failure" }],
+          isError: true,
+        }));
+        const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
+        const result = await wrapped({});
+        expect(result.isError).toBe(true);
+        const entry = JSON.parse(readFileSync(auditPath, "utf8").trim()) as Record<string, unknown>;
+        expect(entry.tool).toBe("faxdrop_send_fax");
+        expect(entry.result).toBe("error");
+      } finally {
+        delete process.env.FAXDROP_MCP_AUDIT_LOG;
+        rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
     it("dry-run wouldCallWith redacts sensitive args", async () => {
       process.env.FAXDROP_MCP_DRY_RUN = "true";
       const handler = vi.fn(async () => ({
