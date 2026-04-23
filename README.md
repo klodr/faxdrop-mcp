@@ -35,7 +35,7 @@ You can. But every agent that does ends up re-implementing the same handful of g
 
 - **Input validation** — absolute-path + extension + 10 MB cap on the upload (all before the file is opened); E.164 regex on the fax number; no SSRF, no path traversal.
 - **TOCTOU-safe read** — file descriptor pinned with `fs.open()`, size enforced continuously while reading.
-- **No secret leakage** — error objects strip the response body; audit log redacts `apiKey`/`authorization`/`password`/etc. (property-tested with fast-check).
+- **No secret leakage** — error objects strip the response body; the audit log keeps only an explicit allowlist of FaxDrop response-shape fields (`recipientNumber`, `faxId`, `id`) in clear, blocks the credential set (`apiKey` / `authorization` / `password` / …), and elides every other field with a length marker (`[ELIDED:NNN]`). Property-tested with fast-check.
 - **Dry-run + audit log** — `FAXDROP_MCP_DRY_RUN=true` to test prompts without sending; `FAXDROP_MCP_AUDIT_LOG=/abs/path` for a JSONL trail (mode `0o600`).
 - **Clean errors** — FaxDrop's 402 / 429 / 4xx surfaced as MCP `isError` with `error_type`, `hint`, `retry_after`.
 - **Drop-in for any MCP client** — one `npx -y faxdrop-mcp` line in Claude Desktop / Code / Cursor / Continue / OpenClaw.
@@ -147,8 +147,8 @@ Check the delivery status of a previously sent fax. Terminal statuses (`delivere
 | Allowed types | `FAXDROP_MCP_ALLOWED_TYPES=...` | `FIXED_LINE,FIXED_LINE_OR_MOBILE,VOIP,TOLL_FREE` | libphonenumber `NumberType` allow-list. |
 | Allowed countries | `FAXDROP_MCP_ALLOWED_COUNTRIES=...` | `US,CA,PR,GU,VI,AS,MP` | ISO-3166-1 alpha-2 allow-list (US/CA + US territories). |
 | State directory | `FAXDROP_MCP_STATE_DIR=/abs/path` | `~/.faxdrop-mcp/` (mode `0o700`) | Where `paired.json` lives (mode `0o600`, atomic write). |
-| Dry run | `FAXDROP_MCP_DRY_RUN=true` | off | Write tools (`faxdrop_send_fax`, `faxdrop_pair_number`) return the would-be payload (sensitive fields redacted) and never call FaxDrop or touch `paired.json`. |
-| Audit log | `FAXDROP_MCP_AUDIT_LOG=/abs/path/audit.log` | off | Append-only JSON Lines (file mode `0o600`). Sensitive args are redacted. |
+| Dry run | `FAXDROP_MCP_DRY_RUN=true` | off | Write tools (`faxdrop_send_fax`, `faxdrop_pair_number`) return the would-be payload (passed through the same allowlist redaction as the audit log — see row below) and never call FaxDrop or touch `paired.json`. |
+| Audit log | `FAXDROP_MCP_AUDIT_LOG=/abs/path/audit.log` | off | Append-only JSON Lines (file mode `0o600`). Allowlist-based redaction: only FaxDrop response-shape fields (`recipientNumber`, `faxId`, `id`) are kept in clear; known credential keys (`apiKey` / `authorization` / `password` / `secret` / `token`) are replaced with `[REDACTED]`; every other field is elided with a `[ELIDED:NNN]` length marker. This is a fail-closed design: a new API field added upstream is hidden by default, not leaked. |
 
 ### Error catalog
 
