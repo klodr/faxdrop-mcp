@@ -97,6 +97,62 @@ describe("Middleware", () => {
       await expect(wrapped({})).rejects.toThrow("unexpected");
     });
 
+    it("audits as `error` when handler returns isError:true (business error)", async () => {
+      const tmpDir = mkdtempSync(join(tmpdir(), "faxdrop-audit-iserror-"));
+      const auditPath = join(tmpDir, "audit.log");
+      try {
+        process.env.FAXDROP_MCP_AUDIT_LOG = auditPath;
+        const handler = vi.fn(async () => ({
+          content: [{ type: "text" as const, text: "handler-surfaced failure" }],
+          isError: true,
+        }));
+        const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
+        const result = await wrapped({});
+        expect(result.isError).toBe(true);
+        const entry = JSON.parse(readFileSync(auditPath, "utf8").trim()) as Record<string, unknown>;
+        expect(entry.tool).toBe("faxdrop_send_fax");
+        expect(entry.result).toBe("error");
+      } finally {
+        delete process.env.FAXDROP_MCP_AUDIT_LOG;
+        rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    it("does not let audit failures mask the handler result", async () => {
+      // Regression for the core masking-bug fix: when the audit
+      // pipeline (`redactForAudit` → `JSON.stringify`) throws, the
+      // handler's return value must still propagate verbatim. We
+      // trigger the throw without mocking imports by passing a
+      // structured-content shape that cycles through an allowlisted
+      // key — `redactForAudit` recurses into the cycle, JSON.stringify
+      // rejects it, safeLogAudit swallows the throw to stderr, and the
+      // wrapped result is preserved.
+      const tmpDir = mkdtempSync(join(tmpdir(), "faxdrop-audit-masking-"));
+      const auditPath = join(tmpDir, "audit.log");
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        process.env.FAXDROP_MCP_AUDIT_LOG = auditPath;
+        const circular: Record<string, unknown> = {};
+        circular.recipientNumber = circular; // allowlisted key → redactForAudit recurses into a cycle
+        const handler = vi.fn(async () => ({
+          content: [{ type: "text" as const, text: "sent" }],
+          structuredContent: circular,
+        }));
+        const wrapped = wrapToolHandler("faxdrop_send_fax", handler);
+        const result = await wrapped({ recipientNumber: "+12125551234" });
+        // Handler's own result is preserved:
+        expect(result.content[0].text).toBe("sent");
+        // Audit failure was diverted to stderr, not propagated:
+        expect(errSpy).toHaveBeenCalled();
+        const stderrMessages = errSpy.mock.calls.map((c) => String(c[0]));
+        expect(stderrMessages.some((m) => m.includes("audit"))).toBe(true);
+      } finally {
+        errSpy.mockRestore();
+        delete process.env.FAXDROP_MCP_AUDIT_LOG;
+        rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
     it("dry-run wouldCallWith redacts sensitive args", async () => {
       process.env.FAXDROP_MCP_DRY_RUN = "true";
       const handler = vi.fn(async () => ({
