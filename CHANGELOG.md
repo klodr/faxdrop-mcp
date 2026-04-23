@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Codecov Test Analytics wiring** — vitest emits a `test-results.junit.xml` alongside its default human reporter, and CI uploads it via `codecov/test-results-action@v1.2.1` (pinned by full SHA). Gives us the "Tests" dashboard on codecov.io: per-suite flaky-test detection, slowest tests, per-test failure history. Upload runs only on the Node 22 matrix leg with `!cancelled()` so a test failure still surfaces the report. XML file is gitignored and absent from `package.json#files` — it never ships to npm.
+
 ### Changed (BREAKING)
 
 - **Node.js floor: `>=22.11`** (was `>=20.11`). Node 20 reaches end of Active LTS on 2026-04-30; keeping the floor there would ship the package on an unmaintained runtime the day after. `22.11.0` is the LTS-tagged entry point for the Node 22 "Jod" line (released October 2024), which runs maintenance until 2027-04-30 — one year of headroom. Pinning to the LTS-tag floor rather than `>=22.0.0` skips the pre-LTS v22.0–v22.10 releases. Aligned with the sibling repos `klodr/gmail-mcp` and `klodr/mercury-invoicing-mcp`, all moving to the same floor.
