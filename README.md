@@ -1,4 +1,4 @@
-# faxdrop-mcp
+# 📠 faxdrop-mcp
 
 > Send real faxes from any MCP-enabled AI assistant. Wraps the [FaxDrop](https://faxdrop.com) HTTP API.
 
@@ -25,11 +25,11 @@
 
 A Model Context Protocol (MCP) server that lets AI assistants (Claude, Cursor, Continue, OpenClaw…) send real faxes through the [FaxDrop API](https://www.faxdrop.com/for-developers).
 
-## Why this MCP?
+## ✨ Why this MCP?
 
 Faxing is still required by US healthcare, government forms, and a long tail of legal/financial workflows. FaxDrop is a hosted fax service with a clean HTTP API and a free tier (2 faxes/month). This MCP exposes it to LLMs with the safeguards an agent platform actually needs.
 
-### Why not just call the FaxDrop API directly?
+### 🤔 Why not just call the FaxDrop API directly?
 
 You can. But every agent that does ends up re-implementing the same handful of guards. This MCP gives them to you for free:
 
@@ -43,7 +43,7 @@ You can. But every agent that does ends up re-implementing the same handful of g
 
 A ~12 KB wrapper that turns a one-week security review into a one-line config change.
 
-## Installation
+## 📦 Installation
 
 ```bash
 npm install -g faxdrop-mcp
@@ -55,11 +55,11 @@ Or use directly with `npx`:
 npx faxdrop-mcp
 ```
 
-## Configuration
+## ⚙️ Configuration
 
 The server reads `FAXDROP_API_KEY` from the environment. Get your key at [faxdrop.com/account](https://faxdrop.com/account) (Developer API → Generate Key). Keys look like `fd_live_<32 hex>`.
 
-### Claude Desktop / Claude Code
+### 🤖 Claude Desktop / Claude Code
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (or `~/.claude.json` for Claude Code):
 
@@ -77,7 +77,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (or `~/
 }
 ```
 
-### Cursor
+### 🖱️ Cursor
 
 Add to `~/.cursor/mcp.json`:
 
@@ -95,13 +95,13 @@ Add to `~/.cursor/mcp.json`:
 }
 ```
 
-### OpenClaw
+### 🦀 OpenClaw
 
 Add to `~/.openclaw/openclaw.json`, then restart the gateway (`docker restart openclaw-openclaw-gateway-1` or your equivalent).
 
-## Tools (3)
+## 🛠️ Tools (3)
 
-### `faxdrop_send_fax`
+### 📤 `faxdrop_send_fax`
 
 Send a fax. Uploads a local document **from the outbox** (default `~/FaxOutbox/`) to a fax number in international (E.164) format.
 
@@ -118,7 +118,7 @@ Send a fax. Uploads a local document **from the outbox** (default `~/FaxOutbox/`
 
 **Returns:** `{ success, faxId, status, statusUrl }`
 
-### `faxdrop_pair_number`
+### 🔗 `faxdrop_pair_number`
 
 Add a fax number to the paired whitelist (`~/.faxdrop-mcp/paired.json`). Only effective when `FAXDROP_MCP_NUMBER_GATE=pairing` (default). The number must still pass the TYPE and COUNTRY checks (no bypass). **Always confirm with the user before pairing** — paired numbers can be faxed without further per-number approval.
 
@@ -127,7 +127,7 @@ Add a fax number to the paired whitelist (`~/.faxdrop-mcp/paired.json`). Only ef
 
 **Returns:** `{ paired, country, type }`
 
-### `faxdrop_get_fax_status`
+### 📊 `faxdrop_get_fax_status`
 
 Check the delivery status of a previously sent fax. Terminal statuses (`delivered` / `failed` / `partial`) are cached process-wide (LRU 100 entries, whitelist-sliced) — re-polling a finished fax short-circuits with a `_cached: true` marker to spare your FaxDrop quota.
 
@@ -138,7 +138,7 @@ Check the delivery status of a previously sent fax. Terminal statuses (`delivere
 
 **Returns:** `{ id, status, recipientNumber?, pages?, completedAt?, _cached? }`
 
-## Safeguards
+## 🛡️ Safeguards
 
 | Knob | Env var | Default | Notes |
 |---|---|---|---|
@@ -150,7 +150,7 @@ Check the delivery status of a previously sent fax. Terminal statuses (`delivere
 | Dry run | `FAXDROP_MCP_DRY_RUN=true` | off | Write tools (`faxdrop_send_fax`, `faxdrop_pair_number`) return the would-be payload (passed through the same allowlist redaction as the audit log — see row below) and never call FaxDrop or touch `paired.json`. |
 | Audit log | `FAXDROP_MCP_AUDIT_LOG=/abs/path/audit.log` | off | Append-only JSON Lines (file mode `0o600`). Allowlist-based redaction: only FaxDrop response-shape fields (`recipientNumber`, `faxId`, `id`) are kept in clear; known credential keys (`apiKey` / `authorization` / `password` / `secret` / `token`) are replaced with `[REDACTED]`; every other field is elided with a `[ELIDED:NNN]` length marker. This is a fail-closed design: a new API field added upstream is hidden by default, not leaked. |
 
-### Error catalog
+### ⚠️ Error catalog
 
 Every failure is returned as `isError: true` with a structured `error_type`, `message`, and (when applicable) `hint` and `retry_after`. Programmatic consumers can match on `error_type` (in `structuredContent`) to drive retry logic.
 
@@ -168,7 +168,7 @@ Every failure is returned as `isError: true` with a structured `error_type`, `me
 | `invalid_response` | upstream | FaxDrop returned a non-JSON body (proxy interception, incident page). | Body is discarded for safety; check FaxDrop status page. |
 | `fax_error` | upstream (fallback) | FaxDrop returned an error with no `error_type` field. | Read the message; treat as transient. |
 
-### Rate limits & quotas
+### 🚦 Rate limits & quotas
 
 Two independent caps gate every fax send, both enforced by FaxDrop:
 
@@ -177,21 +177,21 @@ Two independent caps gate every fax send, both enforced by FaxDrop:
 
 The MCP does **not** add its own limiter; it forwards FaxDrop's response as a clean `isError: true` with `error_type`, `hint`, and `retry_after`. See [FaxDrop's API docs](https://www.faxdrop.com/for-developers) for the current numbers.
 
-## Security
+## 🔒 Security
 
 - **Always confirm with the user** (recipient, file, cover-page) before invoking `faxdrop_send_fax`. This is also baked into the tool description.
 - The MCP reads files from the user's local filesystem — only expose this server to agents you trust.
 - Test prompts safely with `FAXDROP_MCP_DRY_RUN=true`.
 - See [SECURITY.md](./SECURITY.md) for the vulnerability reporting process.
 
-## Roadmap
+## 🗺️ Roadmap
 
 See [ROADMAP.md](./ROADMAP.md).
 
-## Contributing
+## 🤝 Contributing
 
 PRs welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the test/build/lint checklist and release process.
 
-## License
+## 📄 License
 
 MIT — see [LICENSE](./LICENSE).
