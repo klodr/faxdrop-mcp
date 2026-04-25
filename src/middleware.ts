@@ -221,7 +221,7 @@ export function logAudit(
   if (isInForbiddenSystemRoot(path)) {
     console.error(
       `[audit] FAXDROP_MCP_AUDIT_LOG must not target a POSIX system root ` +
-        `(/etc, /usr, /bin, /sbin, /sys, /proc, /boot, /dev); got: ${path}. ` +
+        `(${AUDIT_LOG_FORBIDDEN_PREFIXES.join(", ")}); got: ${path}. ` +
         `Use a path under $HOME or another writable user-owned directory.`,
     );
     return;
