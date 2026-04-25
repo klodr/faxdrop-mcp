@@ -8,6 +8,16 @@ import { _resetOutboxCache } from "../src/file-jail.js";
 import { _resetStatusCache } from "../src/status-cache.js";
 
 describe("createServer", () => {
+  // Most tests exercise non-FaxDrop hostnames; opt them in via the
+  // explicit env-var so the validator's FaxDrop-only default doesn't
+  // mask the property under test.
+  beforeEach(() => {
+    process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST = "true";
+  });
+  afterEach(() => {
+    delete process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST;
+  });
+
   it("creates a server that lists the 3 tools", async () => {
     const server = createServer({ apiKey: "fd_live_test", log: () => {} });
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair();
@@ -65,6 +75,14 @@ describe("validateBaseUrl", () => {
   // sent to FAXDROP_API_BASE_URL, so the same SSRF / cleartext / private
   // network safeguards apply here.
 
+  // Tests below that exercise non-FaxDrop hosts opt in via this env var.
+  beforeEach(() => {
+    process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST = "true";
+  });
+  afterEach(() => {
+    delete process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST;
+  });
+
   it("accepts a valid public HTTPS URL", () => {
     expect(() => validateBaseUrl("https://www.faxdrop.com")).not.toThrow();
     expect(() => validateBaseUrl("https://api.faxdrop.com/v1")).not.toThrow();
@@ -89,9 +107,9 @@ describe("validateBaseUrl", () => {
 
   it("rejects loopback hostnames (localhost, 127.0.0.0/8, ::1)", () => {
     expect(() => validateBaseUrl("https://localhost/api")).toThrow(/\.localhost namespace/);
-    expect(() => validateBaseUrl("https://127.0.0.1/api")).toThrow(/loopback/);
-    expect(() => validateBaseUrl("https://127.0.0.2/api")).toThrow(/loopback/);
-    expect(() => validateBaseUrl("https://[::1]/api")).toThrow(/loopback/);
+    expect(() => validateBaseUrl("https://127.0.0.1/api")).toThrow(/non-public range/);
+    expect(() => validateBaseUrl("https://127.0.0.2/api")).toThrow(/non-public range/);
+    expect(() => validateBaseUrl("https://[::1]/api")).toThrow(/non-public range/);
   });
 
   it("rejects the RFC 6761 .localhost namespace and *.localhost subdomains", () => {
@@ -103,52 +121,54 @@ describe("validateBaseUrl", () => {
 
   it("rejects RFC 1918 private IPv4 addresses", () => {
     // ipaddr.js classifies 10/8, 172.16/12, 192.168/16 as `private`.
-    expect(() => validateBaseUrl("https://10.0.0.1/api")).toThrow(/private/);
-    expect(() => validateBaseUrl("https://10.255.255.255/api")).toThrow(/private/);
-    expect(() => validateBaseUrl("https://172.16.0.1/api")).toThrow(/private/);
-    expect(() => validateBaseUrl("https://172.31.255.255/api")).toThrow(/private/);
-    expect(() => validateBaseUrl("https://192.168.1.1/api")).toThrow(/private/);
+    expect(() => validateBaseUrl("https://10.0.0.1/api")).toThrow(/non-public range/);
+    expect(() => validateBaseUrl("https://10.255.255.255/api")).toThrow(/non-public range/);
+    expect(() => validateBaseUrl("https://172.16.0.1/api")).toThrow(/non-public range/);
+    expect(() => validateBaseUrl("https://172.31.255.255/api")).toThrow(/non-public range/);
+    expect(() => validateBaseUrl("https://192.168.1.1/api")).toThrow(/non-public range/);
   });
 
   it("rejects link-local + cloud metadata (169.254.0.0/16)", () => {
     // ipaddr.js classifies 169.254/16 as `linkLocal`.
-    expect(() => validateBaseUrl("https://169.254.169.254/latest/meta-data/")).toThrow(/linkLocal/);
-    expect(() => validateBaseUrl("https://169.254.0.1/api")).toThrow(/linkLocal/);
+    expect(() => validateBaseUrl("https://169.254.169.254/latest/meta-data/")).toThrow(
+      /non-public range/,
+    );
+    expect(() => validateBaseUrl("https://169.254.0.1/api")).toThrow(/non-public range/);
   });
 
   it("rejects 0.0.0.0/8 (the unspecified address)", () => {
     // ipaddr.js classifies 0.0.0.0/8 as `unspecified`.
-    expect(() => validateBaseUrl("https://0.0.0.0/api")).toThrow(/unspecified/);
-    expect(() => validateBaseUrl("https://0.1.2.3/api")).toThrow(/unspecified/);
+    expect(() => validateBaseUrl("https://0.0.0.0/api")).toThrow(/non-public range/);
+    expect(() => validateBaseUrl("https://0.1.2.3/api")).toThrow(/non-public range/);
   });
 
   it("rejects IPv6 ULA (fc00::/7)", () => {
     // ipaddr.js classifies fc00::/7 as `uniqueLocal`.
-    expect(() => validateBaseUrl("https://[fc00::1]/api")).toThrow(/uniqueLocal/);
-    expect(() => validateBaseUrl("https://[fd00::1]/api")).toThrow(/uniqueLocal/);
+    expect(() => validateBaseUrl("https://[fc00::1]/api")).toThrow(/non-public range/);
+    expect(() => validateBaseUrl("https://[fd00::1]/api")).toThrow(/non-public range/);
   });
 
   it("rejects IPv6 link-local (fe80::/10) including the upper half of the range", () => {
     // ipaddr.js classifies fe80::/10 as `linkLocal` for both halves.
-    expect(() => validateBaseUrl("https://[fe80::1]/api")).toThrow(/linkLocal/);
-    expect(() => validateBaseUrl("https://[febf::1]/api")).toThrow(/linkLocal/);
+    expect(() => validateBaseUrl("https://[fe80::1]/api")).toThrow(/non-public range/);
+    expect(() => validateBaseUrl("https://[febf::1]/api")).toThrow(/non-public range/);
   });
 
   it("rejects RFC 6598 carrier-grade NAT (100.64.0.0/10)", () => {
-    expect(() => validateBaseUrl("https://100.64.0.5/api")).toThrow(/carrierGradeNat/);
+    expect(() => validateBaseUrl("https://100.64.0.5/api")).toThrow(/non-public range/);
   });
 
   it("rejects RFC 2544 benchmarking + RFC 5737 documentation ranges", () => {
-    expect(() => validateBaseUrl("https://198.18.0.5/api")).toThrow(/reserved/);
-    expect(() => validateBaseUrl("https://192.0.2.5/api")).toThrow(/reserved/);
+    expect(() => validateBaseUrl("https://198.18.0.5/api")).toThrow(/non-public range/);
+    expect(() => validateBaseUrl("https://192.0.2.5/api")).toThrow(/non-public range/);
   });
 
   it("rejects IPv4-mapped IPv6 loopback in both encodings", () => {
     // Node's URL.hostname canonicalises `::ffff:127.0.0.1` into the hex-pair
     // form `::ffff:7f00:1`. ipaddr.js normalises both shapes back into the
     // underlying IPv4 range, so the same loopback classification applies.
-    expect(() => validateBaseUrl("https://[::ffff:127.0.0.1]/api")).toThrow(/loopback/);
-    expect(() => validateBaseUrl("https://[::ffff:7f00:1]/api")).toThrow(/loopback/);
+    expect(() => validateBaseUrl("https://[::ffff:127.0.0.1]/api")).toThrow(/non-public range/);
+    expect(() => validateBaseUrl("https://[::ffff:7f00:1]/api")).toThrow(/non-public range/);
   });
 
   it("does NOT reject RFC 1918-adjacent but routable IPv4 addresses", () => {
@@ -158,6 +178,51 @@ describe("validateBaseUrl", () => {
     expect(() => validateBaseUrl("https://172.32.0.1/api")).not.toThrow();
     // 192.169.0.0 is just outside 192.168/16 — must be allowed.
     expect(() => validateBaseUrl("https://192.169.0.1/api")).not.toThrow();
+  });
+});
+
+describe("validateBaseUrl — FaxDrop hostname allowlist", () => {
+  it("accepts faxdrop.com and *.faxdrop.com by default (no opt-in needed)", () => {
+    delete process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST;
+    expect(() => validateBaseUrl("https://faxdrop.com/api")).not.toThrow();
+    expect(() => validateBaseUrl("https://www.faxdrop.com")).not.toThrow();
+    expect(() => validateBaseUrl("https://api.faxdrop.com/v1")).not.toThrow();
+    expect(() => validateBaseUrl("https://api.staging.faxdrop.com/v1")).not.toThrow();
+  });
+
+  it("rejects non-FaxDrop hosts by default (no opt-in)", () => {
+    delete process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST;
+    expect(() => validateBaseUrl("https://attacker.example.com/api")).toThrow(
+      /not a FaxDrop hostname/,
+    );
+    expect(() => validateBaseUrl("https://my-proxy.example.com/api")).toThrow(
+      /not a FaxDrop hostname/,
+    );
+  });
+
+  it("accepts non-FaxDrop hosts when FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST=true", () => {
+    process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST = "true";
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(() => validateBaseUrl("https://my-proxy.example.com/api")).not.toThrow();
+      expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("non-FaxDrop host"));
+    } finally {
+      errSpy.mockRestore();
+      delete process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST;
+    }
+  });
+
+  it("only the literal string 'true' opts in", () => {
+    delete process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST;
+    process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST = "1";
+    expect(() => validateBaseUrl("https://my-proxy.example.com/api")).toThrow(
+      /not a FaxDrop hostname/,
+    );
+    process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST = "yes";
+    expect(() => validateBaseUrl("https://my-proxy.example.com/api")).toThrow(
+      /not a FaxDrop hostname/,
+    );
+    delete process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST;
   });
 });
 

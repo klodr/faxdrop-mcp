@@ -89,15 +89,38 @@ export function validateBaseUrl(raw: string): void {
   if (ipaddr.isValid(host)) {
     const range = ipaddr.process(host).range();
     if (range !== "unicast") {
+      // Stable user-facing message — do NOT interpolate the raw `range`
+      // value from `ipaddr.js`. The library's classification taxonomy
+      // is an internal implementation detail; coupling the contract to
+      // those exact label strings would force a release every time
+      // upstream renames a label. Log the raw range to stderr instead.
+      console.error(`[validateBaseUrl] rejected host=${host} ipaddr.js-range=${range}`);
       throw new Error(
-        `FAXDROP_API_BASE_URL must be publicly reachable. Got ${host} which falls in the "${range}" range — ` +
-          `the bearer API key + every fax payload would be sent to a non-public address.`,
+        `FAXDROP_API_BASE_URL must point at a publicly reachable IP — ${host} is in a non-public range (loopback / private / link-local / carrier-grade NAT / reserved / IPv6 ULA / ...).`,
       );
     }
   }
-  // DNS hostnames that don't parse as an IP literal are accepted here.
-  // The FaxDrop client will reject them at request time if they don't
-  // resolve to a usable target.
+
+  // Default-allow only the official FaxDrop hostnames. The previous rules
+  // (HTTPS-only + non-public-range gate) keep an attacker-controlled env
+  // var like `FAXDROP_API_BASE_URL=https://attacker.example.com` from
+  // pointing at a private host, but they still let it route the bearer
+  // API key + every fax payload to *any* public host. Lock to
+  // `*.faxdrop.com` by default; legitimate self-hosted proxies /
+  // observability shims have to opt in explicitly via
+  // `FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST=true`, which surfaces a loud
+  // stderr warning so the deviation is visible at boot.
+  const isFaxDropHost = host === "faxdrop.com" || host.endsWith(".faxdrop.com");
+  if (!isFaxDropHost) {
+    if (process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST !== "true") {
+      throw new Error(
+        `FAXDROP_API_BASE_URL=${host} is not a FaxDrop hostname. Set FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST=true to opt in to a custom proxy / observability shim — be aware the bearer API key + every fax payload will be sent to that host.`,
+      );
+    }
+    console.error(
+      `[validateBaseUrl] WARNING: FAXDROP_API_BASE_URL points at a non-FaxDrop host (${host}). Bearer API key + every fax payload will be sent there. Opted in via FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST=true.`,
+    );
+  }
 }
 
 /**
