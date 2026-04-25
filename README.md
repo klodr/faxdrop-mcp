@@ -14,7 +14,6 @@
 [![npm version](https://img.shields.io/npm/v/faxdrop-mcp.svg)](https://www.npmjs.com/package/faxdrop-mcp)
 [![npm downloads](https://img.shields.io/npm/dm/faxdrop-mcp.svg)](https://www.npmjs.com/package/faxdrop-mcp)
 [![Node.js Version](https://img.shields.io/node/v/faxdrop-mcp.svg)](https://nodejs.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-1.29-blue)](https://modelcontextprotocol.io)
 [![MCP Server](https://badge.mcpx.dev?type=server 'MCP Server')](https://modelcontextprotocol.io)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/klodr/faxdrop-mcp/pulls)
