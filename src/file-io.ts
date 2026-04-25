@@ -86,12 +86,16 @@ function magicMatches(ext: string, bytes: Uint8Array): boolean {
 // The check runs once at module load: throwing here surfaces a clear
 // startup error in the MCP launcher logs instead of a confusing
 // "everything works but symlink TOCTOU is open" runtime drift.
+/* v8 ignore start -- guard runs once at module load on Windows only;
+   POSIX CI never hits this branch and a faithful test would require a
+   second test process with a stubbed `fs.constants` module. */
 if (fsConstants.O_NOFOLLOW === undefined) {
   throw new Error(
     "faxdrop-mcp requires fs.constants.O_NOFOLLOW to enforce its symlink TOCTOU guard. " +
       "This platform does not expose O_NOFOLLOW (Windows). Use WSL or another POSIX environment.",
   );
 }
+/* v8 ignore stop */
 
 export class FileIoError extends Error {
   constructor(
