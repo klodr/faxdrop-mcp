@@ -124,6 +124,7 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
       });
       return textResult(data);
     },
+    { title: "Send Fax", destructiveHint: true },
   );
 
   defineTool(
@@ -169,6 +170,7 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
         type: tac.type,
       });
     },
+    { title: "Pair Recipient Number", destructiveHint: false, idempotentHint: true },
   );
 
   defineTool(
@@ -205,5 +207,6 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
       maybeCacheStatus(faxId, data);
       return textResult(data);
     },
+    { title: "Get Fax Status", readOnlyHint: true },
   );
 }
