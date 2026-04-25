@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-25 — Tool descriptions polish
+
+A documentation-quality release. The 3 tool definitions in `src/tools/fax.ts` are rewritten in a structured TDQS form (USE WHEN / DO NOT USE / SIDE EFFECTS / RETURNS), driven by an LLM-agent-orientation review and cross-validated against [Anthropic — Writing Tools for Agents](https://www.anthropic.com/engineering/writing-tools-for-agents), the [MCP Tools Specification](https://modelcontextprotocol.io/specification/2025-11-25/server/tools), and [SEP-1382](https://github.com/modelcontextprotocol/modelcontextprotocol/issues/1382). Two small dependency-hygiene fixes ride along (`packageManager` and `pnpm.onlyBuiltDependencies` pinned for reproducibility on pnpm-based registries). No runtime change. No schema change.
+
+### Changed
+
+- **Tool descriptions adopt the TDQS pattern** — the 3 tool definitions (`faxdrop_send_fax`, `faxdrop_pair_number`, `faxdrop_get_fax_status`) are restructured into explicit USE WHEN / DO NOT USE / SIDE EFFECTS / RETURNS sections. `faxdrop_send_fax` keeps a strong `SIDE EFFECTS` block (charges FaxDrop balance, audit log entry, ALWAYS confirm with user). `faxdrop_pair_number` documents the persistence to `paired.json` and the gate-mode prerequisite. `faxdrop_get_fax_status` drops the trivial rate-limit-only `SIDE EFFECTS` line and folds the `_cached: true` cache nuance into `DO NOT USE` and `RETURNS` where it is actionable.
+- **`packageManager` field pinned to `npm@10.9.7`** — matches the npm version bundled with Node 22.22.2 (our `engines.node` floor), so Corepack stays a no-op for default Node 22 installs and a no-cost pin elsewhere. Stops a contributor or CI runner with an older npm from regenerating a lockfileVersion 2 lockfile.
+- **`pnpm.onlyBuiltDependencies: ["esbuild"]`** — pnpm-based registries (Glama, Smithery, etc.) can now build cleanly without operator-prompt for esbuild's post-install hook. Other transitive post-install scripts stay blocked.
+- **README MIT badge dropped** — license is already surfaced by GitHub (sidebar, auto-detected from `LICENSE`) and npm (right rail, parsed from `package.json` `license`). The third copy in the README was noise without information.
+
+### Added
+
+- **`docs/ROADMAP.md` — MCP `outputSchema` per tool item** — extend `defineTool()` with an optional `outputSchema?: ZodRawShape` for the 3 tools so clients can validate `structuredContent` per MCP spec 2025-06-18+. Lets us drop the textual `RETURNS:` block from tool descriptions and rely on a machine-readable contract instead.
+
 ## [0.4.0] - 2026-04-25
 
 ### Added
@@ -397,7 +412,8 @@ for the full story.
 - **Verification paths** documented in [SECURITY.md → Verifying releases](.github/SECURITY.md#verifying-releases): npm CLI provenance, `gh attestation verify`, `cosign verify-blob-attestation`.
 - **Best Practices** [project 12578](https://www.bestpractices.dev/projects/12578) — passing tier; Silver-tier criteria documented in CONTINUITY.md / ASSURANCE_CASE.md / SECURITY.md.
 
-[Unreleased]: https://github.com/klodr/faxdrop-mcp/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/klodr/faxdrop-mcp/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.9...v0.4.0
 [0.3.9]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.7...v0.3.8
