@@ -92,4 +92,4 @@ catalog response, confirming the API key is valid.
 ## Documentation
 
 Full README: <https://github.com/klodr/faxdrop-mcp#readme>
-Security policy: <https://github.com/klodr/faxdrop-mcp/blob/main/SECURITY.md>
+Security policy: <https://github.com/klodr/faxdrop-mcp/blob/main/.github/SECURITY.md>
