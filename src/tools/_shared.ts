@@ -44,16 +44,15 @@ export function defineTool<S extends ZodRawShape>(
   description: string,
   inputSchema: S,
   handler: (args: z.infer<z.ZodObject<S>>) => Promise<ToolResult>,
-  annotations?: ToolAnnotations,
+  annotations: ToolAnnotations,
 ): void {
   const wrapped = wrapToolHandler(name, handler);
   // MCP behavioral annotations (readOnlyHint / destructiveHint /
   // idempotentHint / openWorldHint) — declared machine-readable so
   // hosts and rubrics (TDQS / Glama Behavior dimension) can detect
-  // tool semantics without scraping the prose description.
-  server.registerTool(
-    name,
-    annotations ? { description, inputSchema, annotations } : { description, inputSchema },
-    wrapped as never,
-  );
+  // tool semantics without scraping the prose description. Required
+  // (not optional) so every new tool ships with explicit semantics —
+  // forgetting the annotation now fails typecheck instead of
+  // silently shipping a tool with no hint set.
+  server.registerTool(name, { description, inputSchema, annotations }, wrapped as never);
 }
