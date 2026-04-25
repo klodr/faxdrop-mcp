@@ -3,7 +3,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { mkdtempSync, realpathSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createServer, validateBaseUrl, VERSION } from "../src/server.js";
+import { createServer, FAXDROP_HOSTS, validateBaseUrl, VERSION } from "../src/server.js";
 import { _resetOutboxCache } from "../src/file-jail.js";
 import { _resetStatusCache } from "../src/status-cache.js";
 
@@ -182,13 +182,21 @@ describe("validateBaseUrl", () => {
 });
 
 describe("validateBaseUrl — FaxDrop hostname allowlist", () => {
-  it("accepts only `www.faxdrop.com` by default (strict allowlist, no wildcard)", () => {
+  it("accepts every host on the strict allowlist (no wildcard)", () => {
     delete process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST;
-    // Only the canonical hostname is allowlisted.
-    expect(() => validateBaseUrl("https://www.faxdrop.com")).not.toThrow();
-    expect(() => validateBaseUrl("https://www.faxdrop.com/api/v1")).not.toThrow();
-    // No wildcard: bare `faxdrop.com` and other subdomains are rejected
-    // until they pass explicit code review.
+    // Iterate the exported allowlist constant so the test does not pin a
+    // literal hostname — the allowlist can be tightened (or extended)
+    // without rewriting the assertion.
+    for (const allowed of FAXDROP_HOSTS) {
+      expect(() => validateBaseUrl(`https://${allowed}`)).not.toThrow();
+      expect(() => validateBaseUrl(`https://${allowed}/api/v1`)).not.toThrow();
+    }
+  });
+
+  it("rejects faxdrop subdomains that aren't on the strict allowlist", () => {
+    delete process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST;
+    // No wildcard: bare `faxdrop.com` and arbitrary subdomains are
+    // rejected until they pass explicit code review.
     expect(() => validateBaseUrl("https://faxdrop.com/api")).toThrow(/not a FaxDrop hostname/);
     expect(() => validateBaseUrl("https://api.faxdrop.com/v1")).toThrow(/not a FaxDrop hostname/);
     expect(() => validateBaseUrl("https://api.staging.faxdrop.com/v1")).toThrow(

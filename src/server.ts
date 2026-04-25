@@ -9,6 +9,11 @@ import { registerAllPrompts } from "./prompts/index.js";
 // `npm version patch|minor|major`.
 export const VERSION = "0.5.0";
 
+// Strict allowlist of FaxDrop hostnames `validateBaseUrl()` accepts without
+// the explicit `FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST=true` opt-in. Single
+// canonical hostname today; new entries require explicit code review.
+export const FAXDROP_HOSTS = ["www.faxdrop.com"] as const;
+
 export interface ServerOptions {
   apiKey: string;
   /** Override the FaxDrop API base URL (e.g. for a self-hosted proxy). */
@@ -113,7 +118,6 @@ export function validateBaseUrl(raw: string): void {
   // self-hosted proxies / observability shims opt in via
   // `FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST=true`, which surfaces a loud
   // stderr warning so the deviation is visible at boot.
-  const FAXDROP_HOSTS = ["www.faxdrop.com"];
   const isFaxDropHost = FAXDROP_HOSTS.includes(host);
   if (!isFaxDropHost) {
     if (process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST !== "true") {
