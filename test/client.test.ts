@@ -259,6 +259,40 @@ describe("FaxDropClient", () => {
   });
 });
 
+describe("FaxDropClient — redirect: \"manual\" SSRF gate", () => {
+  it("passes redirect: \"manual\" to fetch (fail-closed against redirect chains)", async () => {
+    let capturedInit: RequestInit | undefined;
+    global.fetch = (async (_url: URL | string, init?: RequestInit) => {
+      capturedInit = init;
+      return {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () => JSON.stringify({ id: "fax_abc", status: "queued" }),
+      };
+    }) as unknown as typeof fetch;
+
+    const client = new FaxDropClient({ apiKey: "k" });
+    await client.getFaxStatus("fax_abc");
+
+    expect(capturedInit?.redirect).toBe("manual");
+  });
+
+  it("throws unexpected_redirect on a 30x response (does not leak X-API-Key)", async () => {
+    mockFetch({
+      ok: false,
+      status: 302,
+      statusText: "Found",
+      body: "",
+    });
+    const client = new FaxDropClient({ apiKey: "k" });
+    await expect(client.getFaxStatus("fax_abc")).rejects.toMatchObject({
+      status: 302,
+      errorType: "unexpected_redirect",
+    });
+  });
+});
+
 describe("FaxDropClient — non-JSON response handling", () => {
   it("discards a non-JSON response body and throws invalid_response (HTML pages, proxy interception)", async () => {
     mockFetch({
