@@ -7,16 +7,27 @@ import { createServer, FAXDROP_HOSTS, validateBaseUrl, VERSION } from "../src/se
 import { _resetOutboxCache } from "../src/file-jail.js";
 import { _resetStatusCache } from "../src/status-cache.js";
 
-describe("createServer", () => {
-  // Most tests exercise non-FaxDrop hostnames; opt them in via the
-  // explicit env-var so the validator's FaxDrop-only default doesn't
-  // mask the property under test.
+/**
+ * Both the `createServer` and `validateBaseUrl` suites exercise
+ * non-FaxDrop hostnames as the property under test, so they need the
+ * `FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST=true` opt-in for every test
+ * case. Centralise the toggle so a future tweak to the policy flag
+ * (different env name, different value semantics, etc.) updates one
+ * place. Each test that wants to exercise the policy default
+ * (allowlist enforced) deletes the env var explicitly inside the test
+ * body.
+ */
+function withNonFaxDropHostOptIn(): void {
   beforeEach(() => {
     process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST = "true";
   });
   afterEach(() => {
     delete process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST;
   });
+}
+
+describe("createServer", () => {
+  withNonFaxDropHostOptIn();
 
   it("creates a server that lists the 3 tools", async () => {
     const server = createServer({ apiKey: "fd_live_test", log: () => {} });
@@ -75,13 +86,9 @@ describe("validateBaseUrl", () => {
   // sent to FAXDROP_API_BASE_URL, so the same SSRF / cleartext / private
   // network safeguards apply here.
 
-  // Tests below that exercise non-FaxDrop hosts opt in via this env var.
-  beforeEach(() => {
-    process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST = "true";
-  });
-  afterEach(() => {
-    delete process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST;
-  });
+  // Same env-toggle as the createServer suite above — most assertions
+  // exercise non-FaxDrop hosts as their property under test.
+  withNonFaxDropHostOptIn();
 
   it("accepts a valid public HTTPS URL", () => {
     expect(() => validateBaseUrl("https://www.faxdrop.com")).not.toThrow();
