@@ -60,7 +60,7 @@ weaknesses have been countered.
    the request body, which the MCP then logs or stringifies. Mitigations:
    `FaxDropError.toString()` and `toJSON()` strip the response body;
    the audit log redacts a list of sensitive keys at any depth (covered
-   by property-based tests in [`test/fuzz.test.ts`](./test/fuzz.test.ts)).
+   by property-based tests in [`test/fuzz.test.ts`](../test/fuzz.test.ts)).
 8. **Hung FaxDrop endpoint** — DoS-by-stall. Mitigation:
    `AbortSignal.timeout(60_000)` on every fetch.
 
