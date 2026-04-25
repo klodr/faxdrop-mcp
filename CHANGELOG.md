@@ -396,3 +396,26 @@ for the full story.
 - **Release pipeline**: tag push → extract CHANGELOG section → create (or update) GitHub Release → Sigstore attestation via `actions/attest-build-provenance@v4.1.0` → upload `dist/index.js`, `dist/index.js.sigstore` and the SLSA in-toto attestation `dist/index.js.intoto.jsonl` → `npm publish --access public --provenance`. Sanity check that the pushed tag matches `package.json`'s `version`.
 - **Verification paths** documented in [SECURITY.md → Verifying releases](.github/SECURITY.md#verifying-releases): npm CLI provenance, `gh attestation verify`, `cosign verify-blob-attestation`.
 - **Best Practices** [project 12578](https://www.bestpractices.dev/projects/12578) — passing tier; Silver-tier criteria documented in CONTINUITY.md / ASSURANCE_CASE.md / SECURITY.md.
+
+[Unreleased]: https://github.com/klodr/faxdrop-mcp/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.9...v0.4.0
+[0.3.9]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.8...v0.3.9
+[0.3.8]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.7...v0.3.8
+[0.3.7]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.6...v0.3.7
+[0.3.6]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.5...v0.3.6
+[0.3.5]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.3...v0.3.5
+[0.3.3]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.2...v0.3.3
+[0.3.2]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.1...v0.3.2
+[0.3.1]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.1.9...v0.2.0
+[0.1.9]: https://github.com/klodr/faxdrop-mcp/compare/v0.1.8...v0.1.9
+[0.1.8]: https://github.com/klodr/faxdrop-mcp/compare/v0.1.7...v0.1.8
+[0.1.7]: https://github.com/klodr/faxdrop-mcp/compare/v0.1.6...v0.1.7
+[0.1.6]: https://github.com/klodr/faxdrop-mcp/compare/v0.1.5...v0.1.6
+[0.1.5]: https://github.com/klodr/faxdrop-mcp/compare/v0.1.4...v0.1.5
+[0.1.4]: https://github.com/klodr/faxdrop-mcp/compare/v0.1.3...v0.1.4
+[0.1.3]: https://github.com/klodr/faxdrop-mcp/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/klodr/faxdrop-mcp/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/klodr/faxdrop-mcp/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/klodr/faxdrop-mcp/releases/tag/v0.1.0
