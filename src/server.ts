@@ -101,16 +101,20 @@ export function validateBaseUrl(raw: string): void {
     }
   }
 
-  // Default-allow only the official FaxDrop hostnames. The previous rules
-  // (HTTPS-only + non-public-range gate) keep an attacker-controlled env
-  // var like `FAXDROP_API_BASE_URL=https://attacker.example.com` from
-  // pointing at a private host, but they still let it route the bearer
-  // API key + every fax payload to *any* public host. Lock to
-  // `*.faxdrop.com` by default; legitimate self-hosted proxies /
-  // observability shims have to opt in explicitly via
+  // Default-allow only the single official FaxDrop API hostname.
+  // The previous rules (HTTPS-only + non-public-range gate) keep an
+  // attacker-controlled env var like
+  // `FAXDROP_API_BASE_URL=https://attacker.example.com` from pointing
+  // at a private host, but they still let it route the bearer API key
+  // + every fax payload to *any* public host. Lock the allowlist to
+  // the exact string FaxDrop actually exposes — no `*.faxdrop.com`
+  // wildcard, because any future subdomain should pass explicit code
+  // review before inheriting write access to the API key. Legitimate
+  // self-hosted proxies / observability shims opt in via
   // `FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST=true`, which surfaces a loud
   // stderr warning so the deviation is visible at boot.
-  const isFaxDropHost = host === "faxdrop.com" || host.endsWith(".faxdrop.com");
+  const FAXDROP_HOSTS = ["www.faxdrop.com"];
+  const isFaxDropHost = FAXDROP_HOSTS.includes(host);
   if (!isFaxDropHost) {
     if (process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST !== "true") {
       throw new Error(

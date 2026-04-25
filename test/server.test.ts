@@ -182,12 +182,18 @@ describe("validateBaseUrl", () => {
 });
 
 describe("validateBaseUrl — FaxDrop hostname allowlist", () => {
-  it("accepts faxdrop.com and *.faxdrop.com by default (no opt-in needed)", () => {
+  it("accepts only `www.faxdrop.com` by default (strict allowlist, no wildcard)", () => {
     delete process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST;
-    expect(() => validateBaseUrl("https://faxdrop.com/api")).not.toThrow();
+    // Only the canonical hostname is allowlisted.
     expect(() => validateBaseUrl("https://www.faxdrop.com")).not.toThrow();
-    expect(() => validateBaseUrl("https://api.faxdrop.com/v1")).not.toThrow();
-    expect(() => validateBaseUrl("https://api.staging.faxdrop.com/v1")).not.toThrow();
+    expect(() => validateBaseUrl("https://www.faxdrop.com/api/v1")).not.toThrow();
+    // No wildcard: bare `faxdrop.com` and other subdomains are rejected
+    // until they pass explicit code review.
+    expect(() => validateBaseUrl("https://faxdrop.com/api")).toThrow(/not a FaxDrop hostname/);
+    expect(() => validateBaseUrl("https://api.faxdrop.com/v1")).toThrow(/not a FaxDrop hostname/);
+    expect(() => validateBaseUrl("https://api.staging.faxdrop.com/v1")).toThrow(
+      /not a FaxDrop hostname/,
+    );
   });
 
   it("rejects non-FaxDrop hosts by default (no opt-in)", () => {
