@@ -140,15 +140,59 @@ export function redactForAudit(
 }
 
 /**
- * Backward-compat alias kept ONLY for the fuzz/property tests that import
- * it by name. Do NOT use in new production code — it defaults to
- * `AUDIT_SAFE_RESPONSE_KEYS_SET`, which preserves response-only field names
- * (`id`, `status`, `pages`, `completedAt`, `error`) and is therefore wrong
- * for redacting *request* payloads. Call `redactForAudit` directly with the
- * appropriate allowlist (`AUDIT_SAFE_ARG_KEYS_SET` for args,
- * `AUDIT_SAFE_RESPONSE_KEYS_SET` for responses) instead.
+ * @deprecated Backward-compat alias kept ONLY for the fuzz/property tests
+ * that import it by name. New production code MUST call `redactForAudit`
+ * directly with an explicit allowlist (`AUDIT_SAFE_ARG_KEYS_SET` for
+ * args, `AUDIT_SAFE_RESPONSE_KEYS_SET` for responses).
+ *
+ * The alias defaults to `AUDIT_SAFE_RESPONSE_KEYS_SET`, which preserves
+ * response-only field names (`id`, `status`, `pages`, `completedAt`,
+ * `error`) and is therefore wrong for redacting *request* payloads — a
+ * future tool that ever accepted an arg called `status` or `error` would
+ * silently leak it through this alias. Removing the alias is a
+ * breaking-only-for-internal-imports change tracked in CHANGELOG against
+ * the next minor, contingent on migrating `test/fuzz.test.ts` to the
+ * explicit allowlist call site.
+ *
+ * Drift risk: a refactor that drops the alias would break the fuzz
+ * suite silently if no one re-runs the type checker. The `@deprecated`
+ * tag here makes the drift explicit to TypeScript / VS Code / ESLint
+ * `no-deprecated` consumers; CI's `tsc --noEmit` flags any new
+ * production import.
  */
 export const redactSensitive = redactForAudit;
+
+/**
+ * POSIX system-root prefixes that must never receive the audit log.
+ *
+ * Operator footgun guard: `FAXDROP_MCP_AUDIT_LOG=/etc/faxdrop.log` is
+ * accepted by `appendFileSync` if the process happens to have write
+ * permission, and a privileged target written there could be read by
+ * another component as configuration. The log content includes
+ * attacker-influenced fields (cover-page args, FaxDrop error bodies),
+ * so a confused-deputy write into `/etc/cron.daily/audit.log` or
+ * `/var/log/wtmp` is a real exfiltration / poisoning vector — even
+ * though anyone who can set the env var already controls the process.
+ *
+ * The denylist matches POSIX system roots only (Windows is rejected at
+ * file-io load time, see `src/file-io.ts`). Each entry is the directory
+ * with a trailing `/` so `/etc/faxdrop.log` matches but `/etcetera.log`
+ * does not.
+ */
+const AUDIT_LOG_FORBIDDEN_PREFIXES = Object.freeze([
+  "/etc/",
+  "/usr/",
+  "/bin/",
+  "/sbin/",
+  "/sys/",
+  "/proc/",
+  "/boot/",
+  "/dev/",
+] as const);
+
+function isInForbiddenSystemRoot(path: string): boolean {
+  return AUDIT_LOG_FORBIDDEN_PREFIXES.some((prefix) => path.startsWith(prefix));
+}
 
 export function logAudit(
   toolName: string,
@@ -160,6 +204,14 @@ export function logAudit(
   if (!path) return;
   if (!isAbsolute(path)) {
     console.error(`[audit] FAXDROP_MCP_AUDIT_LOG must be an absolute path; got: ${path}`);
+    return;
+  }
+  if (isInForbiddenSystemRoot(path)) {
+    console.error(
+      `[audit] FAXDROP_MCP_AUDIT_LOG must not target a POSIX system root ` +
+        `(/etc, /usr, /bin, /sbin, /sys, /proc, /boot, /dev); got: ${path}. ` +
+        `Use a path under $HOME or another writable user-owned directory.`,
+    );
     return;
   }
   const entry = JSON.stringify({

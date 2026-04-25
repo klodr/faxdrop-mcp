@@ -334,6 +334,53 @@ describe("Middleware", () => {
       errSpy.mockRestore();
     });
 
+    it("rejects POSIX system-root prefixes (operator-footgun guard)", () => {
+      // FAXDROP_MCP_AUDIT_LOG=/etc/foo.log accepted by appendFileSync if the
+      // process happens to have write permission, which would let a confused
+      // deputy poison /etc/cron.daily/audit.log or similar with attacker-
+      // influenced cover-page args. Reject the whole POSIX system-root tree.
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        const forbidden = [
+          "/etc/faxdrop.log",
+          "/usr/local/audit.log",
+          "/bin/audit.log",
+          "/sbin/audit.log",
+          "/sys/log",
+          "/proc/audit",
+          "/boot/audit.log",
+          "/dev/null.log",
+        ];
+        for (const path of forbidden) {
+          errSpy.mockClear();
+          process.env.FAXDROP_MCP_AUDIT_LOG = path;
+          logAudit("faxdrop_send_fax", {}, "ok");
+          expect(errSpy).toHaveBeenCalledWith(
+            expect.stringContaining("must not target a POSIX system root"),
+          );
+        }
+      } finally {
+        errSpy.mockRestore();
+      }
+    });
+
+    it("does NOT reject paths that merely contain system-root substrings", () => {
+      // Regression guard: a path like /home/me/etc/audit.log must NOT match
+      // the /etc/ prefix denylist. The check is anchored on startsWith().
+      process.env.FAXDROP_MCP_AUDIT_LOG = join(tmpDir, "etc", "audit.log");
+      // mkdir the parent so the write succeeds.
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        // Will fail to write (no parent dir), but the failure should be the
+        // append-file error, NOT the denylist error.
+        logAudit("faxdrop_send_fax", {}, "ok");
+        const messages = errSpy.mock.calls.map((c) => String(c[0]));
+        expect(messages.some((m) => m.includes("must not target a POSIX system root"))).toBe(false);
+      } finally {
+        errSpy.mockRestore();
+      }
+    });
+
     it("does not throw when write fails (best-effort)", () => {
       const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       process.env.FAXDROP_MCP_AUDIT_LOG = "/nonexistent-dir-faxdrop-test/audit.log";
