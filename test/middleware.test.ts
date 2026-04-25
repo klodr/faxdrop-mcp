@@ -338,7 +338,10 @@ describe("Middleware", () => {
       // FAXDROP_MCP_AUDIT_LOG=/etc/foo.log accepted by appendFileSync if the
       // process happens to have write permission, which would let a confused
       // deputy poison /etc/cron.daily/audit.log or similar with attacker-
-      // influenced cover-page args. Reject the whole POSIX system-root tree.
+      // influenced cover-page args. Reject the POSIX system-root tree
+      // including the /var/ subdirectories the threat model cites
+      // (/var/log/wtmp, /var/spool/cron) — but not the macOS / Linux
+      // tmpdir locations that legitimately live under /var/.
       const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       try {
         const forbidden = [
@@ -350,6 +353,11 @@ describe("Middleware", () => {
           "/proc/audit",
           "/boot/audit.log",
           "/dev/null.log",
+          "/var/log/messages",
+          "/var/spool/cron/audit",
+          "/var/run/faxdrop.log",
+          "/var/lib/faxdrop/audit.log",
+          "/var/cache/audit.log",
         ];
         for (const path of forbidden) {
           errSpy.mockClear();
@@ -357,6 +365,30 @@ describe("Middleware", () => {
           logAudit("faxdrop_send_fax", {}, "ok");
           expect(errSpy).toHaveBeenCalledWith(
             expect.stringContaining("must not target a POSIX system root"),
+          );
+        }
+      } finally {
+        errSpy.mockRestore();
+      }
+    });
+
+    it("does NOT reject /var/folders/ (macOS tmpdir) or /var/tmp/ (Linux)", () => {
+      // Regression guard against narrowing /var/ too aggressively — these
+      // subtrees are legitimate temp locations and must remain writable.
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        const allowed = [
+          "/var/folders/abc/audit.log", // macOS-style tmpdir prefix
+          "/var/tmp/audit.log", // Linux convention
+          "/var/audit/audit.log", // user-managed app dir
+        ];
+        for (const path of allowed) {
+          errSpy.mockClear();
+          process.env.FAXDROP_MCP_AUDIT_LOG = path;
+          logAudit("faxdrop_send_fax", {}, "ok");
+          const messages = errSpy.mock.calls.map((c) => String(c[0]));
+          expect(messages.some((m) => m.includes("must not target a POSIX system root"))).toBe(
+            false,
           );
         }
       } finally {

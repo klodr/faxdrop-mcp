@@ -293,10 +293,10 @@ function acquireLock(lockPath: string, timeoutMs = 3000, staleMs = 30_000): numb
           { cause: err },
         );
       }
-      // Sleep ~5–15 ms (jittered to break tick-synchronisation across
-      // contending processes). Math.random gives us [0, 1) — multiply by
-      // 10 for the upper bound, add 5 for the floor. No CPU pin — the
-      // thread is parked by the kernel until the timeout elapses.
+      // Sleep ~5–14 ms (jittered to break tick-synchronisation across
+      // contending processes). Math.random gives us [0, 1); floor(× 10)
+      // → integer 0–9; +5 → 5–14 ms. No CPU pin — the thread is parked
+      // by the kernel until the timeout elapses.
       const sleepMs = 5 + Math.floor(Math.random() * 10);
       sleepSync(sleepMs);
     }

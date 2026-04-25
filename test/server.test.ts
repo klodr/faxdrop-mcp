@@ -112,9 +112,7 @@ describe("validateBaseUrl", () => {
 
   it("rejects link-local + cloud metadata (169.254.0.0/16)", () => {
     // ipaddr.js classifies 169.254/16 as `linkLocal`.
-    expect(() => validateBaseUrl("https://169.254.169.254/latest/meta-data/")).toThrow(
-      /linkLocal/,
-    );
+    expect(() => validateBaseUrl("https://169.254.169.254/latest/meta-data/")).toThrow(/linkLocal/);
     expect(() => validateBaseUrl("https://169.254.0.1/api")).toThrow(/linkLocal/);
   });
 
@@ -143,6 +141,14 @@ describe("validateBaseUrl", () => {
   it("rejects RFC 2544 benchmarking + RFC 5737 documentation ranges", () => {
     expect(() => validateBaseUrl("https://198.18.0.5/api")).toThrow(/reserved/);
     expect(() => validateBaseUrl("https://192.0.2.5/api")).toThrow(/reserved/);
+  });
+
+  it("rejects IPv4-mapped IPv6 loopback in both encodings", () => {
+    // Node's URL.hostname canonicalises `::ffff:127.0.0.1` into the hex-pair
+    // form `::ffff:7f00:1`. ipaddr.js normalises both shapes back into the
+    // underlying IPv4 range, so the same loopback classification applies.
+    expect(() => validateBaseUrl("https://[::ffff:127.0.0.1]/api")).toThrow(/loopback/);
+    expect(() => validateBaseUrl("https://[::ffff:7f00:1]/api")).toThrow(/loopback/);
   });
 
   it("does NOT reject RFC 1918-adjacent but routable IPv4 addresses", () => {

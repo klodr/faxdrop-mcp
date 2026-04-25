@@ -188,6 +188,18 @@ const AUDIT_LOG_FORBIDDEN_PREFIXES = Object.freeze([
   "/proc/",
   "/boot/",
   "/dev/",
+  // `/var/log/`, `/var/spool/`, `/var/run/`, `/var/lib/`, `/var/cache/`
+  // are the confused-deputy-attractive subtrees the threat-model JSDoc
+  // above mentions (`/var/log/wtmp`, `/var/spool/cron`, etc.). Block
+  // each individually rather than the whole `/var/` so legitimate
+  // OS tmpdirs (`/var/folders/` on macOS, `/var/tmp/` on Linux) and
+  // user-managed app dirs under `/var/` stay usable for audit log
+  // placement. (Caught by CodeRabbit on PR #86.)
+  "/var/log/",
+  "/var/spool/",
+  "/var/run/",
+  "/var/lib/",
+  "/var/cache/",
 ] as const);
 
 function isInForbiddenSystemRoot(path: string): boolean {
