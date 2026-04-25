@@ -29,7 +29,19 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
   defineTool(
     server,
     "faxdrop_send_fax",
-    "Send a fax via FaxDrop. Uploads a local file (PDF, DOCX, JPEG, or PNG, ≤10MB) to a fax number in E.164 format. Returns the FaxDrop fax ID for status polling. ALWAYS confirm with the user (recipient number, file path, cover page details) before calling this tool. IMPORTANT: the document must live inside the outbox directory — by default `~/FaxOutbox/` (auto-created), or wherever the user set FAXDROP_MCP_WORK_DIR. Files outside the outbox are rejected for safety. If the user references a file elsewhere, ask them to copy or move it to the outbox first.",
+    [
+      "Send a real fax via FaxDrop.",
+      "",
+      "USE WHEN: user needs to fax a document (PDF, DOCX, JPEG, PNG ≤10MB) to a fax number — medical records, legal forms, government submissions, recipients who only accept fax.",
+      "",
+      "DO NOT USE: for digital delivery (email, sftp), for files outside the outbox, for non-fax numbers — the 3-layer phone gate (TYPE → COUNTRY → per-number policy) rejects mobile/landline/premium.",
+      "",
+      "SIDE EFFECTS: charges FaxDrop balance (or consumes free credits + adds branded cover on free tier), creates an audit log entry, allocates a fax ID server-side. ALWAYS confirm recipient + file + cover with the user before calling.",
+      "",
+      "FILE LOCATION: document must live inside the outbox (default `~/FaxOutbox/`, override via FAXDROP_MCP_WORK_DIR). Files outside are rejected — ask the user to copy in first.",
+      "",
+      'RETURNS: `{ faxId, status: "queued", ... }` — poll with `faxdrop_get_fax_status`.',
+    ].join("\n"),
     {
       filePath: z
         .string()
@@ -117,7 +129,19 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
   defineTool(
     server,
     "faxdrop_pair_number",
-    "Add a fax number to the pairing whitelist (default `~/.faxdrop-mcp/paired.json`, overridable via FAXDROP_MCP_STATE_DIR). Only effective when FAXDROP_MCP_NUMBER_GATE=pairing. The number must still pass the TYPE and COUNTRY checks (no bypass). ALWAYS confirm with the user before pairing — paired numbers can be faxed without further per-number approval.",
+    [
+      "Add a fax number to the per-recipient whitelist (paired.json).",
+      "",
+      "USE WHEN: server runs with FAXDROP_MCP_NUMBER_GATE=pairing and the user wants to pre-approve a recurring recipient (clinic, lawyer, supplier) so future `faxdrop_send_fax` calls skip the per-number confirmation step.",
+      "",
+      "DO NOT USE: when gate mode is `open` (no whitelist needed) or `closed` (whitelist edited out-of-band only — pairing rejected). For one-off faxes, skip pairing and call `faxdrop_send_fax` directly.",
+      "",
+      "SIDE EFFECTS: writes to `~/.faxdrop-mcp/paired.json` (or `$FAXDROP_MCP_STATE_DIR/paired.json`). Persistent across runs. ALWAYS confirm with the user — paired numbers can be faxed without further per-number approval.",
+      "",
+      "VALIDATION: TYPE + COUNTRY checks still apply (no bypass). Mobile/landline/premium numbers are rejected even at pairing time.",
+      "",
+      "RETURNS: `{ paired, country, type }`.",
+    ].join("\n"),
     {
       recipientNumber: FAX_NUMBER,
     },
@@ -150,7 +174,19 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
   defineTool(
     server,
     "faxdrop_get_fax_status",
-    "Check the delivery status of a previously sent fax. Status values: queued | sending | delivered | failed | partial. Most US faxes complete in under 90 seconds. POLLING STRATEGY: every ~5s for the first 2 min, then every ~30s for up to 10 min, and STOP polling once status is delivered, failed, or partial — these are terminal and the MCP will short-circuit further calls (returning a `_cached: true` marker) to spare your FaxDrop quota. Status checks count toward FaxDrop's per-key rate limits.",
+    [
+      "Check the delivery status of a previously sent fax.",
+      "",
+      "USE WHEN: polling for the outcome of a fax sent via `faxdrop_send_fax`. Status values: `queued` | `sending` | `delivered` | `failed` | `partial`.",
+      "",
+      "DO NOT USE: for faxes sent outside this MCP (no provenance — server returns 404). Once status is `delivered`, `failed`, or `partial`, STOP polling — these are terminal.",
+      "",
+      "SIDE EFFECTS: each non-cached call hits the FaxDrop API and counts toward its per-key rate limits (no monetary cost). Terminal results are cached process-wide.",
+      "",
+      "POLLING STRATEGY: every ~5s for the first 2 min, then every ~30s up to 10 min. Most US faxes complete in <90s.",
+      "",
+      "RETURNS: provider status object + optional `_cached: true` flag.",
+    ].join("\n"),
     {
       faxId: z
         .string()
