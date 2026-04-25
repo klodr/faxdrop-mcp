@@ -285,11 +285,24 @@ describe('FaxDropClient — redirect: "manual" SSRF gate', () => {
       statusText: "Found",
       body: "",
     });
-    const client = new FaxDropClient({ apiKey: "k" });
-    await expect(client.getFaxStatus("fax_abc")).rejects.toMatchObject({
-      status: 302,
-      errorType: "unexpected_redirect",
-    });
+    const SECRET_KEY = "fd_live_secret_NEVERLEAK_12345";
+    const client = new FaxDropClient({ apiKey: SECRET_KEY });
+    let caught: FaxDropError | undefined;
+    try {
+      await client.getFaxStatus("fax_abc");
+      fail("Expected FaxDropError on 30x");
+    } catch (err) {
+      caught = err as FaxDropError;
+    }
+    expect(caught?.status).toBe(302);
+    expect(caught?.errorType).toBe("unexpected_redirect");
+    // Pin the contract: neither toString() nor toJSON() (the two paths a
+    // host or an LLM-facing channel uses to surface the error) carry the
+    // API key. The whole point of failing closed on a 30x is to NOT
+    // re-emit the credential downstream.
+    expect(caught?.toString()).not.toContain(SECRET_KEY);
+    expect(JSON.stringify(caught?.toJSON())).not.toContain(SECRET_KEY);
+    expect(caught?.message).not.toContain(SECRET_KEY);
   });
 });
 
