@@ -7,8 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-26 — Layered SSRF defense + LOW/INFO security findings
+
+A minor release closing the LOW/INFO findings raised by the
+`docker/mcp-registry` security-reviewer audit on `0.5.0` and adding a
+runtime SSRF defense layer (`assertSafeUrl`, `src/safe-url.ts`) that
+re-classifies every outbound URL's resolved IPs before each `fetch`.
+
+The `validateBaseUrl` startup gate is rebuilt on top of `ipaddr.js`
+(RFC-based range classification: loopback / RFC 1918 / RFC 3927
+link-local / RFC 6598 carrier-grade NAT / RFC 2544 benchmarking /
+RFC 5737 documentation / multicast / IPv6 ULA / IPv6 link-local) and a
+new exact-match FaxDrop hostname allowlist (`FAXDROP_HOSTS =
+["www.faxdrop.com"]`) with an opt-out
+(`FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST=true`) for advanced operators
+running a forward proxy or a self-hosted FaxDrop endpoint.
+
+The audit-log path denylist, the `O_NOFOLLOW` mandatory load, the
+`Atomics.wait`-backed `acquireLock` retry loop, and the outbox
+file-content magic-byte verification ride along.
+
+No breaking change for legacy users (the FaxDrop hostname allowlist is
+opt-in via env var; the runtime SSRF gate is transparent for clients
+already pointing at `www.faxdrop.com`). New runtime dependency:
+`ipaddr.js` (BSD-3-Clause, ~10 KB minified, used by every major
+SSRF-defense library in the Node ecosystem).
+
 ### Security
 
+- **`FaxDropClient.request` passes `redirect: "manual"` to native `fetch`** (`src/client.ts`). The default `redirect: "follow"` would let undici chase a `Location` header transparently, bouncing the `X-API-Key` + every fax payload to whatever host the redirect points at — which `assertSafeUrl()` never re-classifies because the redirect is handled below the public fetch surface. The handler now throws an `unexpected_redirect` `FaxDropError` on any 30x, failing closed instead of leaking the API key. Mirrors the same gate landed on `klodr/mercury-invoicing-mcp` `src/client.ts`.
 - **`FAXDROP_API_BASE_URL` is now strictly validated at server startup** (`src/server.ts:validateBaseUrl`). The bearer API key + every fax payload + every recipient number is sent to this URL, so a misconfigured (or env-tampered) override pointing at `http://attacker.example` would have exfiltrated the full trust radius in cleartext. The validator mirrors the strict outbound webhook URL gate in `klodr/mercury-invoicing-mcp` (`src/tools/webhooks.ts:HttpsWebhookUrl`): HTTPS-only, with loopback / RFC 1918 / link-local / cloud-metadata / IPv6 ULA / `*.localhost` rejected. Asymmetric posture vs the outbound-webhook check is now closed.
 - **`O_NOFOLLOW` is now mandatory at module load** (`src/file-io.ts`). Previously `(fsConstants.O_NOFOLLOW || 0)` silently degraded to flag `0` on platforms that did not expose the constant (Windows), reducing the symlink TOCTOU guard to lstat+realpath alone. The server now refuses to start on Windows with a clear error pointing at WSL — no more silent platform-degradation of the TOCTOU barrier.
 - **`acquireLock` retry loop no longer pins a CPU core** (`src/phone-gate.ts:acquireLock`). The previous busy-wait pinned 100% of one core for each ~25 ms quantum (≈120 retries over the 3 s timeout), which under multi-process contention on a shared `FAXDROP_MCP_STATE_DIR` blocked the Node event loop and any concurrent stdio JSON-RPC frames. Replaced with `Atomics.wait`-backed sleep (5–15 ms jittered), which parks the thread cheaply at the kernel level. Regression-guarded by a CPU-time-vs-wall-time ratio test (`test/phone-gate.test.ts`).
@@ -426,7 +453,8 @@ for the full story.
 - **Verification paths** documented in [SECURITY.md → Verifying releases](.github/SECURITY.md#verifying-releases): npm CLI provenance, `gh attestation verify`, `cosign verify-blob-attestation`.
 - **Best Practices** [project 12578](https://www.bestpractices.dev/projects/12578) — passing tier; Silver-tier criteria documented in CONTINUITY.md / ASSURANCE_CASE.md / SECURITY.md.
 
-[Unreleased]: https://github.com/klodr/faxdrop-mcp/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/klodr/faxdrop-mcp/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.9...v0.4.0
 [0.3.9]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.8...v0.3.9

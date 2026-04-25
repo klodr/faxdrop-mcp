@@ -259,6 +259,53 @@ describe("FaxDropClient", () => {
   });
 });
 
+describe('FaxDropClient — redirect: "manual" SSRF gate', () => {
+  it('passes redirect: "manual" to fetch (fail-closed against redirect chains)', async () => {
+    let capturedInit: RequestInit | undefined;
+    global.fetch = (async (_url: URL | string, init?: RequestInit) => {
+      capturedInit = init;
+      return {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () => JSON.stringify({ id: "fax_abc", status: "queued" }),
+      };
+    }) as unknown as typeof fetch;
+
+    const client = new FaxDropClient({ apiKey: "k" });
+    await client.getFaxStatus("fax_abc");
+
+    expect(capturedInit?.redirect).toBe("manual");
+  });
+
+  it("throws unexpected_redirect on a 30x response (does not leak X-API-Key)", async () => {
+    mockFetch({
+      ok: false,
+      status: 302,
+      statusText: "Found",
+      body: "",
+    });
+    const SECRET_KEY = "fd_live_secret_NEVERLEAK_12345";
+    const client = new FaxDropClient({ apiKey: SECRET_KEY });
+    let caught: FaxDropError | undefined;
+    try {
+      await client.getFaxStatus("fax_abc");
+      fail("Expected FaxDropError on 30x");
+    } catch (err) {
+      caught = err as FaxDropError;
+    }
+    expect(caught?.status).toBe(302);
+    expect(caught?.errorType).toBe("unexpected_redirect");
+    // Pin the contract: neither toString() nor toJSON() (the two paths a
+    // host or an LLM-facing channel uses to surface the error) carry the
+    // API key. The whole point of failing closed on a 30x is to NOT
+    // re-emit the credential downstream.
+    expect(caught?.toString()).not.toContain(SECRET_KEY);
+    expect(JSON.stringify(caught?.toJSON())).not.toContain(SECRET_KEY);
+    expect(caught?.message).not.toContain(SECRET_KEY);
+  });
+});
+
 describe("FaxDropClient — non-JSON response handling", () => {
   it("discards a non-JSON response body and throws invalid_response (HTML pages, proxy interception)", async () => {
     mockFetch({
