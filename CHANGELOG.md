@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Community-health files** — `.github/SUPPORT.md` (issue-redirection page surfaced by GitHub on issue creation, with best-effort response SLOs) and `CITATION.cff` (Citation File Format metadata enabling the GitHub "Cite this repository" button on the repo page).
+- **`package.json` discoverability** — `funding` field now points at `https://github.com/sponsors/klodr` (renders as the ❤️ Sponsor button on `npmjs.com`). `CHANGELOG.md` added to the `files` allowlist so it stays in the published tarball — npm v11 dropped `CHANGELOG.md` from the always-included list, so consumers who read changelog from `node_modules/` would otherwise see it disappear silently.
+
+### Changed
+
+- **Socket Security stricter posture (aligned with `klodr/gmail-mcp`)** — `socket.yml` no longer silences the three high-value supply-chain alerts `unstableOwnership`, `unmaintained`, and `manifestConfusion`. The original blanket-suppression (PR #28, 2026-04-19) was preventive against the `@modelcontextprotocol/sdk → express` transitive surface tracked in [modelcontextprotocol/typescript-sdk#1924](https://github.com/modelcontextprotocol/typescript-sdk/issues/1924), but in practice `express` is actively maintained with stable ownership, so the rules generate near-zero noise. They will now fire on transitive owner changes / abandonware / manifest mismatch — exactly the supply-chain attack surface that hit `event-stream`, `ua-parser-js`, `nx`. Per-package `@SocketSecurity ignore <pkg>@<version>` comments on the relevant PR remain available if a transitive dep generates a real false positive.
+- **Repository structure cleanup** — community-health files (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`) moved to `.github/`, and general documentation (`ROADMAP.md`, `ASSURANCE_CASE.md`, `CONTINUITY.md`) moved to `docs/`. Internal links updated across `README.md`, `CHANGELOG.md`, `llms-install.md`, `docs/ASSURANCE_CASE.md`, `docs/CONTINUITY.md`, `src/sanitize.ts`, and `.github/workflows/verify-release.yml`. The repository root now keeps only `README.md`, `LICENSE`, `CHANGELOG.md`, `llms-install.md`, and project-config files. No behaviour change; GitHub still resolves the community files at their new canonical locations.
+
 ## [0.3.9] - 2026-04-23
 
 ### Changed
@@ -361,8 +371,8 @@ register a new package name. The token has been re-provisioned;
 
 First release. Two MCP tools wrapping the FaxDrop API
 (`faxdrop_send_fax`, `faxdrop_get_fax_status`), with security and
-release infrastructure. See [README](./README.md), [SECURITY.md](./SECURITY.md),
-[ASSURANCE_CASE.md](./ASSURANCE_CASE.md), and [CONTINUITY.md](./CONTINUITY.md)
+release infrastructure. See [README](./README.md), [SECURITY.md](.github/SECURITY.md),
+[ASSURANCE_CASE.md](docs/ASSURANCE_CASE.md), and [CONTINUITY.md](docs/CONTINUITY.md)
 for the full story.
 
 ### Added
@@ -381,5 +391,5 @@ for the full story.
 - **CI / quality**: matrix on Node 18/20/22; ~96% coverage to Codecov; ESLint v9 flat config with `typescript-eslint` type-aware rules + Prettier (gated by a `Lint & Format` job); TypeScript strict + `noUnusedLocals/noUnusedParameters/noImplicitReturns/noFallthroughCasesInSwitch`.
 - **Security tooling**: CodeQL Advanced (security-extended + security-and-quality, both `javascript-typescript` and `actions` languages); OpenSSF Scorecard; Socket Security; Snyk; Dependabot security + version updates; secret scanning + push protection; all GitHub Actions pinned by SHA.
 - **Release pipeline**: tag push → extract CHANGELOG section → create (or update) GitHub Release → Sigstore attestation via `actions/attest-build-provenance@v4.1.0` → upload `dist/index.js`, `dist/index.js.sigstore` and the SLSA in-toto attestation `dist/index.js.intoto.jsonl` → `npm publish --access public --provenance`. Sanity check that the pushed tag matches `package.json`'s `version`.
-- **Verification paths** documented in [SECURITY.md → Verifying releases](./SECURITY.md#verifying-releases): npm CLI provenance, `gh attestation verify`, `cosign verify-blob-attestation`.
+- **Verification paths** documented in [SECURITY.md → Verifying releases](.github/SECURITY.md#verifying-releases): npm CLI provenance, `gh attestation verify`, `cosign verify-blob-attestation`.
 - **Best Practices** [project 12578](https://www.bestpractices.dev/projects/12578) — passing tier; Silver-tier criteria documented in CONTINUITY.md / ASSURANCE_CASE.md / SECURITY.md.

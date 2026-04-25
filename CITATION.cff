@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+title: "faxdrop-mcp"
+abstract: "Quality-built FaxDrop MCP server. Security-first by design, drops into Claude Desktop, Code, Cursor, OpenClaw."
+message: "If you use this software, please cite it using the metadata below."
+type: software
+version: "0.3.9"
+date-released: "2026-04-23"
+authors:
+  - given-names: Claude
+    family-names: Perrin
+    alias: klodr
+repository-code: "https://github.com/klodr/faxdrop-mcp"
+url: "https://github.com/klodr/faxdrop-mcp"
+license: MIT
+keywords:
+  - mcp
+  - model-context-protocol
+  - faxdrop
+  - fax
+  - claude
+  - llm

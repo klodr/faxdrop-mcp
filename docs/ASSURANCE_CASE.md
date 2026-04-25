@@ -1,7 +1,7 @@
 # Assurance case — `faxdrop-mcp`
 
 This document is the project's **assurance case**: an argument for why the
-security requirements documented in [SECURITY.md](./SECURITY.md#security-model--what-you-can-and-cannot-expect)
+security requirements documented in [SECURITY.md](../.github/SECURITY.md#security-model--what-you-can-and-cannot-expect)
 hold. It covers four pillars: the threat model, the trust boundaries,
 the secure-design principles applied, and how common implementation
 weaknesses have been countered.
@@ -39,7 +39,7 @@ weaknesses have been countered.
 2. **Trojaned npm tarball** — an attacker publishes a malicious version
    of `faxdrop-mcp`. Mitigations: Sigstore signing of every release,
    SLSA in-toto attestation, npm provenance, documented verification
-   path (see [SECURITY.md → Verifying releases](./SECURITY.md#verifying-releases)).
+   path (see [SECURITY.md → Verifying releases](../.github/SECURITY.md#verifying-releases)).
 3. **Malicious transitive dependency** — a sub-dep ships malicious code.
    Mitigations: Socket Security PR alerts, Dependabot, CodeQL, Snyk,
    OpenSSF Scorecard.
@@ -60,7 +60,7 @@ weaknesses have been countered.
    the request body, which the MCP then logs or stringifies. Mitigations:
    `FaxDropError.toString()` and `toJSON()` strip the response body;
    the audit log redacts a list of sensitive keys at any depth (covered
-   by property-based tests in [`test/fuzz.test.ts`](./test/fuzz.test.ts)).
+   by property-based tests in [`test/fuzz.test.ts`](../test/fuzz.test.ts)).
 8. **Hung FaxDrop endpoint** — DoS-by-stall. Mitigation:
    `AbortSignal.timeout(60_000)` on every fetch.
 
@@ -127,4 +127,4 @@ Mapped to [CWE](https://cwe.mitre.org/) and [OWASP Top 10](https://owasp.org/Top
 | **CWE-1357** Reliance on insufficiently trustworthy component | Countered | All GitHub Actions pinned by full commit SHA; Dependabot + Socket monitor for compromised deps |
 
 Outstanding weaknesses are listed transparently in
-[SECURITY.md → What this MCP does NOT protect against](./SECURITY.md#what-this-mcp-does-not-protect-against).
+[SECURITY.md → What this MCP does NOT protect against](../.github/SECURITY.md#what-this-mcp-does-not-protect-against).
