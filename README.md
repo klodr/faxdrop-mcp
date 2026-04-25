@@ -39,7 +39,7 @@ You can. But every agent that does ends up re-implementing the same handful of g
 - **Dry-run + audit log** — `FAXDROP_MCP_DRY_RUN=true` to test prompts without sending; `FAXDROP_MCP_AUDIT_LOG=/abs/path` for a JSONL trail (mode `0o600`).
 - **Clean errors** — FaxDrop's 402 / 429 / 4xx surfaced as MCP `isError` with `error_type`, `hint`, `retry_after`.
 - **Drop-in for any MCP client** — one `npx -y faxdrop-mcp` line in Claude Desktop / Code / Cursor / Continue / OpenClaw.
-- **Verifiable releases** — Sigstore-signed + SLSA in-toto attestation + npm provenance ([verify](./SECURITY.md#verifying-releases)).
+- **Verifiable releases** — Sigstore-signed + SLSA in-toto attestation + npm provenance ([verify](.github/SECURITY.md#verifying-releases)).
 
 A ~12 KB wrapper that turns a one-week security review into a one-line config change.
 
@@ -182,15 +182,23 @@ The MCP does **not** add its own limiter; it forwards FaxDrop's response as a cl
 - **Always confirm with the user** (recipient, file, cover-page) before invoking `faxdrop_send_fax`. This is also baked into the tool description.
 - The MCP reads files from the user's local filesystem — only expose this server to agents you trust.
 - Test prompts safely with `FAXDROP_MCP_DRY_RUN=true`.
-- See [SECURITY.md](./SECURITY.md) for the vulnerability reporting process.
+- See [SECURITY.md](.github/SECURITY.md) for the vulnerability reporting process.
 
 ## 🗺️ Roadmap
 
-See [ROADMAP.md](./ROADMAP.md).
+See [ROADMAP.md](docs/ROADMAP.md).
+
+## 🌐 Ecosystem
+
+Other MCP servers in the klodr family:
+
+- 📧 [klodr/gmail-mcp](https://github.com/klodr/gmail-mcp) — Gmail
+- 📠 [klodr/faxdrop-mcp](https://github.com/klodr/faxdrop-mcp) — Send real faxes via FaxDrop (you are here)
+- 🏦 [klodr/mercury-invoicing-mcp](https://github.com/klodr/mercury-invoicing-mcp) — Mercury banking + invoicing
 
 ## 🤝 Contributing
 
-PRs welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the test/build/lint checklist and release process.
+PRs welcome. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the test/build/lint checklist and release process.
 
 ## 📄 License
 
