@@ -35,6 +35,68 @@ const MIME_BY_EXT: Record<string, string> = {
   ".png": "image/png",
 };
 
+/**
+ * Magic-byte signatures used to confirm that the bytes actually carry the
+ * format the extension advertises. Catches both an attacker-placed
+ * misnaming (`id_rsa` renamed to `id_rsa.pdf`) AND operator typos
+ * (a `.docx` that's actually a legacy `.doc` binary). Cheap because the
+ * file is already in memory after the chunked read.
+ *
+ * Signatures (per ISO / Adobe / Microsoft / W3C / JFIF):
+ *   PDF   →  "%PDF-"               25 50 44 46 2D
+ *   DOCX  →  "PK\x03\x04" or "PK\x05\x06" (empty zip) — DOCX is a ZIP container
+ *   JPEG  →  FF D8 FF                                  (any APP marker variant)
+ *   PNG   →  89 50 4E 47 0D 0A 1A 0A
+ *
+ * Returned as ranges (per-extension list of byte arrays) so the check
+ * stays a simple `bytes.startsWith(any-signature)`.
+ */
+const MAGIC_BY_EXT: Record<string, readonly Uint8Array[]> = {
+  ".pdf": [new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d])], // %PDF-
+  ".docx": [
+    new Uint8Array([0x50, 0x4b, 0x03, 0x04]), // PK\x03\x04 (standard ZIP local file header)
+    new Uint8Array([0x50, 0x4b, 0x05, 0x06]), // PK\x05\x06 (empty ZIP — accepted defensively)
+  ],
+  ".jpeg": [new Uint8Array([0xff, 0xd8, 0xff])],
+  ".jpg": [new Uint8Array([0xff, 0xd8, 0xff])],
+  ".png": [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
+};
+
+function bytesStartsWith(bytes: Uint8Array, prefix: Uint8Array): boolean {
+  if (bytes.length < prefix.length) return false;
+  for (let i = 0; i < prefix.length; i++) {
+    if (bytes[i] !== prefix[i]) return false;
+  }
+  return true;
+}
+
+function magicMatches(ext: string, bytes: Uint8Array): boolean {
+  const sigs = MAGIC_BY_EXT[ext];
+  if (!sigs) return false;
+  return sigs.some((sig) => bytesStartsWith(bytes, sig));
+}
+
+// One-shot startup guard: O_NOFOLLOW is the TOCTOU barrier between
+// realpath() and open(), and it is undefined on Windows (the constant
+// resolves to `undefined`, which would silently disable the flag via
+// `(fsConstants.O_NOFOLLOW || 0)`). faxdrop-mcp is documented Unix-only;
+// rather than degrade to lstat+realpath alone on Windows, refuse to
+// start. Operators who need Windows support must use WSL.
+//
+// The check runs once at module load: throwing here surfaces a clear
+// startup error in the MCP launcher logs instead of a confusing
+// "everything works but symlink TOCTOU is open" runtime drift.
+/* v8 ignore start -- guard runs once at module load on Windows only;
+   POSIX CI never hits this branch and a faithful test would require a
+   second test process with a stubbed `fs.constants` module. */
+if (fsConstants.O_NOFOLLOW === undefined) {
+  throw new Error(
+    "faxdrop-mcp requires fs.constants.O_NOFOLLOW to enforce its symlink TOCTOU guard. " +
+      "This platform does not expose O_NOFOLLOW (Windows). Use WSL or another POSIX environment.",
+  );
+}
+/* v8 ignore stop */
+
 export class FileIoError extends Error {
   constructor(
     message: string,
@@ -108,9 +170,10 @@ export async function openInsideOutbox(filePath: string): Promise<OpenedFile> {
 
   // Pin the file descriptor with O_NOFOLLOW so any symlink swap that
   // sneaks in after the realpath/lstat checks (TOCTOU) fails the open
-  // with ELOOP. On platforms without O_NOFOLLOW the constant is 0 and
-  // the flag is a no-op (we still have the lstat + realpath checks).
-  const openFlags = fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW || 0);
+  // with ELOOP. The startup guard above guarantees O_NOFOLLOW is defined
+  // (Windows is rejected at module load), so we OR it in unconditionally —
+  // no silent platform degradation.
+  const openFlags = fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW;
   const fh = await open(canonical, openFlags);
   let bytes: Buffer;
   try {
@@ -139,6 +202,18 @@ export async function openInsideOutbox(filePath: string): Promise<OpenedFile> {
     bytes = Buffer.concat(chunks, total);
   } finally {
     await fh.close();
+  }
+
+  // Magic-byte check: confirm the file content matches the extension.
+  // Catches an attacker-placed misnaming (e.g. `id_rsa` → `id_rsa.pdf` to
+  // sneak a binary through the outbox jail) AND operator typos (a `.docx`
+  // that's actually a legacy `.doc`). The chunked-read above already
+  // brought the bytes into memory; peeking at the first 8 bytes is free.
+  if (!magicMatches(ext, bytes)) {
+    throw new FileIoError(
+      `File content does not match extension ${ext}.`,
+      "Rename to the correct extension or convert the file (e.g. doc → docx, raw image → JPEG/PNG).",
+    );
   }
 
   return {

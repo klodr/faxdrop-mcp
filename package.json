@@ -55,6 +55,7 @@
   "packageManager": "npm@10.9.7",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "ipaddr.js": "^2.3.0",
     "libphonenumber-js": "^1.12.41",
     "zod": "^4.3.6"
   },

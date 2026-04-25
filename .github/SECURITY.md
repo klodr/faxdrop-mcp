@@ -34,7 +34,22 @@ the maintainer commits to, and limits that callers must account for.
   current numbers.
 - **Optional audit trail**: `FAXDROP_MCP_AUDIT_LOG=/abs/path/audit.log`
   writes an append-only JSON Lines record (file mode `0o600`, sensitive
-  fields redacted) of every write call.
+  fields redacted) of every write call. Paths under POSIX system roots
+  (`/etc`, `/usr`, `/bin`, `/sbin`, `/sys`, `/proc`, `/boot`, `/dev`)
+  are rejected with a clear error — those locations should never receive
+  an MCP audit log, even if the launching process happens to have write
+  permission. Use a path under `$HOME` or another writable user-owned
+  directory.
+- **HTTPS-only API base URL**: `FAXDROP_API_BASE_URL` is validated at
+  server startup. Non-HTTPS schemes (http, file, data, ftp, …) and any
+  host in the loopback / RFC 1918 / link-local / cloud-metadata / IPv6
+  ULA / `.localhost` namespace are rejected — fail-fast at startup
+  rather than silently routing the bearer API key + every fax payload
+  to a cleartext or attacker-controlled endpoint.
+- **POSIX-only platform**: faxdrop-mcp requires `fs.constants.O_NOFOLLOW`
+  (the symlink TOCTOU barrier between `realpath` and `open`). Windows
+  does not expose `O_NOFOLLOW`, so the server refuses to start on
+  Windows with a clear error. Use WSL or another POSIX environment.
 - **Fail closed**: 60 s `AbortSignal.timeout` on every fetch; missing
   `FAXDROP_API_KEY` exits at startup.
 - **Outbox jail**: every uploaded file must live inside
@@ -46,7 +61,16 @@ the maintainer commits to, and limits that callers must account for.
   `lstat` (the actual attack vector — `safe.pdf → /etc/passwd`); the
   canonical path is resolved via `realpath`; the open passes
   `O_NOFOLLOW` as a TOCTOU barrier in case a leaf symlink sneaks in
-  between the lstat and the open.
+  between the lstat and the open. The server refuses to start on
+  platforms where `O_NOFOLLOW` is undefined (Windows) so the TOCTOU
+  guard never silently degrades.
+- **File-content magic-byte verification**: after the chunked read, the
+  first bytes of every uploaded file are matched against a per-extension
+  signature table (`%PDF-` for `.pdf`, `PK\x03\x04` for `.docx`,
+  `FFD8FF` for `.jpeg/.jpg`, `89504E47` for `.png`). Catches both an
+  attacker-placed misnaming (`id_rsa` → `id_rsa.pdf` to sneak a binary
+  through the outbox jail) AND operator typos (a `.docx` that is
+  actually a legacy `.doc` binary).
 - **3-layer phone-number gate** on `recipientNumber` (default mode
   `pairing` — HITL approve-by-default): TYPE → COUNTRY → per-number
   policy. Layers 1+2 are immutable at runtime — no per-call approval
@@ -176,6 +200,26 @@ gh attestation verify index.js --repo klodr/faxdrop-mcp \
 ```
 
 Then feed the SBOMs into `grype`, `trivy`, `dependency-track`, or any SPDX/CDX-aware scanner.
+
+## Transitive HTTP/OAuth dependencies — installed but not bundled
+
+`@modelcontextprotocol/sdk` (the MCP SDK) carries a transitive HTTP/SSE/OAuth surface — `express`, `hono`, `jose`, `ajv`, `cors`, `cookie-signature`, `pkce-challenge`, `eventsource`, `eventsource-parser`, `raw-body`, `express-rate-limit` — to support the SDK's *other* transports (Streamable HTTP, SSE, OAuth flows). `faxdrop-mcp` only ever wires `StdioServerTransport`, so none of those packages are reachable from the runtime entrypoint.
+
+What this means in practice:
+
+- **In `node_modules/` after `npm install`**: yes, those packages are present (they are standard transitive dependencies — `npm` and `pnpm` both materialise them).
+- **In the published `dist/index.js`**: no. `tsup` performs tree-shaking at build time; the bundled artifact is ~34 KB and contains only the stdio code path.
+- **In the runtime address space at execution**: no. `dist/index.js` only `import`s the stdio bits; `express`/`hono`/`jose` etc. are never loaded by `node`.
+
+The supply-chain concern that remains is the **install-time risk**: a malicious update to any of those transitive packages could land in `node_modules/` and run a `postinstall` script. Mitigations in place:
+
+- `socket.yml` — `unstableOwnership`, `unmaintained`, and `manifestConfusion` rules enabled (since `klodr/faxdrop-mcp` v0.4.0). These fire on transitive owner changes / abandonware / manifest mismatch — exactly the supply-chain attack surface that hit `event-stream`, `ua-parser-js`, `nx`.
+- Dependabot security updates on every PR.
+- OSSF Scorecard `Pinned-Dependencies` check on every push.
+- `npm audit` reports 0 vulnerabilities across the current 348-package transitive tree.
+- Upstream MCP SDK is tracking a stdio-only factor in [modelcontextprotocol/typescript-sdk#1924](https://github.com/modelcontextprotocol/typescript-sdk/issues/1924); when that ships, the transitive HTTP surface will collapse to zero installed packages.
+
+If a vulnerability is reported in any of those transitive deps, the runtime impact on `faxdrop-mcp` is bounded by tree-shaking (the code never runs), but `npm audit` and Dependabot will still surface the advisory and the maintainer will pin a non-vulnerable version on the next release.
 
 ## Reporting a Vulnerability
 
