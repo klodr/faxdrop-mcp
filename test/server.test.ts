@@ -89,9 +89,9 @@ describe("validateBaseUrl", () => {
 
   it("rejects loopback hostnames (localhost, 127.0.0.0/8, ::1)", () => {
     expect(() => validateBaseUrl("https://localhost/api")).toThrow(/\.localhost namespace/);
-    expect(() => validateBaseUrl("https://127.0.0.1/api")).toThrow(/private\/loopback/);
-    expect(() => validateBaseUrl("https://127.0.0.2/api")).toThrow(/private\/loopback/);
-    expect(() => validateBaseUrl("https://[::1]/api")).toThrow(/IPv6 loopback/);
+    expect(() => validateBaseUrl("https://127.0.0.1/api")).toThrow(/loopback/);
+    expect(() => validateBaseUrl("https://127.0.0.2/api")).toThrow(/loopback/);
+    expect(() => validateBaseUrl("https://[::1]/api")).toThrow(/loopback/);
   });
 
   it("rejects the RFC 6761 .localhost namespace and *.localhost subdomains", () => {
@@ -102,35 +102,47 @@ describe("validateBaseUrl", () => {
   });
 
   it("rejects RFC 1918 private IPv4 addresses", () => {
-    expect(() => validateBaseUrl("https://10.0.0.1/api")).toThrow(/private\/loopback/);
-    expect(() => validateBaseUrl("https://10.255.255.255/api")).toThrow(/private\/loopback/);
-    expect(() => validateBaseUrl("https://172.16.0.1/api")).toThrow(/private\/loopback/);
-    expect(() => validateBaseUrl("https://172.31.255.255/api")).toThrow(/private\/loopback/);
-    expect(() => validateBaseUrl("https://192.168.1.1/api")).toThrow(/private\/loopback/);
+    // ipaddr.js classifies 10/8, 172.16/12, 192.168/16 as `private`.
+    expect(() => validateBaseUrl("https://10.0.0.1/api")).toThrow(/private/);
+    expect(() => validateBaseUrl("https://10.255.255.255/api")).toThrow(/private/);
+    expect(() => validateBaseUrl("https://172.16.0.1/api")).toThrow(/private/);
+    expect(() => validateBaseUrl("https://172.31.255.255/api")).toThrow(/private/);
+    expect(() => validateBaseUrl("https://192.168.1.1/api")).toThrow(/private/);
   });
 
   it("rejects link-local + cloud metadata (169.254.0.0/16)", () => {
+    // ipaddr.js classifies 169.254/16 as `linkLocal`.
     expect(() => validateBaseUrl("https://169.254.169.254/latest/meta-data/")).toThrow(
-      /private\/loopback/,
+      /linkLocal/,
     );
-    expect(() => validateBaseUrl("https://169.254.0.1/api")).toThrow(/private\/loopback/);
+    expect(() => validateBaseUrl("https://169.254.0.1/api")).toThrow(/linkLocal/);
   });
 
   it("rejects 0.0.0.0/8 (the unspecified address)", () => {
-    expect(() => validateBaseUrl("https://0.0.0.0/api")).toThrow(/private\/loopback/);
-    expect(() => validateBaseUrl("https://0.1.2.3/api")).toThrow(/private\/loopback/);
+    // ipaddr.js classifies 0.0.0.0/8 as `unspecified`.
+    expect(() => validateBaseUrl("https://0.0.0.0/api")).toThrow(/unspecified/);
+    expect(() => validateBaseUrl("https://0.1.2.3/api")).toThrow(/unspecified/);
   });
 
   it("rejects IPv6 ULA (fc00::/7)", () => {
-    expect(() => validateBaseUrl("https://[fc00::1]/api")).toThrow(/IPv6 ULA/);
-    expect(() => validateBaseUrl("https://[fd00::1]/api")).toThrow(/IPv6 ULA/);
+    // ipaddr.js classifies fc00::/7 as `uniqueLocal`.
+    expect(() => validateBaseUrl("https://[fc00::1]/api")).toThrow(/uniqueLocal/);
+    expect(() => validateBaseUrl("https://[fd00::1]/api")).toThrow(/uniqueLocal/);
   });
 
   it("rejects IPv6 link-local (fe80::/10) including the upper half of the range", () => {
-    expect(() => validateBaseUrl("https://[fe80::1]/api")).toThrow(/IPv6 link-local/);
-    // Upper half of fe80::/10 — caught by the bitmask but a string-prefix
-    // check on "fe80" would have missed it.
-    expect(() => validateBaseUrl("https://[febf::1]/api")).toThrow(/IPv6 link-local/);
+    // ipaddr.js classifies fe80::/10 as `linkLocal` for both halves.
+    expect(() => validateBaseUrl("https://[fe80::1]/api")).toThrow(/linkLocal/);
+    expect(() => validateBaseUrl("https://[febf::1]/api")).toThrow(/linkLocal/);
+  });
+
+  it("rejects RFC 6598 carrier-grade NAT (100.64.0.0/10)", () => {
+    expect(() => validateBaseUrl("https://100.64.0.5/api")).toThrow(/carrierGradeNat/);
+  });
+
+  it("rejects RFC 2544 benchmarking + RFC 5737 documentation ranges", () => {
+    expect(() => validateBaseUrl("https://198.18.0.5/api")).toThrow(/reserved/);
+    expect(() => validateBaseUrl("https://192.0.2.5/api")).toThrow(/reserved/);
   });
 
   it("does NOT reject RFC 1918-adjacent but routable IPv4 addresses", () => {
