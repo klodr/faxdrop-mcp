@@ -3,6 +3,8 @@ title: "faxdrop-mcp"
 abstract: "Quality-built FaxDrop MCP server. Security-first by design, drops into Claude Desktop, Code, Cursor, OpenClaw."
 message: "If you use this software, please cite it using the metadata below."
 type: software
+version: "0.3.9"
+date-released: "2026-04-23"
 authors:
   - given-names: Claude
     family-names: Perrin
