@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-26 — Layered SSRF defense + LOW/INFO security findings
+
+A minor release closing the LOW/INFO findings raised by the
+`docker/mcp-registry` security-reviewer audit on `0.5.0` and adding a
+runtime SSRF defense layer (`assertSafeUrl`, `src/safe-url.ts`) that
+re-classifies every outbound URL's resolved IPs before each `fetch`.
+
+The `validateBaseUrl` startup gate is rebuilt on top of `ipaddr.js`
+(RFC-based range classification: loopback / RFC 1918 / RFC 3927
+link-local / RFC 6598 carrier-grade NAT / RFC 2544 benchmarking /
+RFC 5737 documentation / multicast / IPv6 ULA / IPv6 link-local) and a
+new exact-match FaxDrop hostname allowlist (`FAXDROP_HOSTS =
+["www.faxdrop.com"]`) with an opt-out
+(`FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST=true`) for advanced operators
+running a forward proxy or a self-hosted FaxDrop endpoint.
+
+The audit-log path denylist, the `O_NOFOLLOW` mandatory load, the
+`Atomics.wait`-backed `acquireLock` retry loop, and the outbox
+file-content magic-byte verification ride along.
+
+No breaking change for legacy users (the FaxDrop hostname allowlist is
+opt-in via env var; the runtime SSRF gate is transparent for clients
+already pointing at `www.faxdrop.com`). New runtime dependency:
+`ipaddr.js` (BSD-3-Clause, ~10 KB minified, used by every major
+SSRF-defense library in the Node ecosystem).
+
 ### Security
 
 - **`FAXDROP_API_BASE_URL` is now strictly validated at server startup** (`src/server.ts:validateBaseUrl`). The bearer API key + every fax payload + every recipient number is sent to this URL, so a misconfigured (or env-tampered) override pointing at `http://attacker.example` would have exfiltrated the full trust radius in cleartext. The validator mirrors the strict outbound webhook URL gate in `klodr/mercury-invoicing-mcp` (`src/tools/webhooks.ts:HttpsWebhookUrl`): HTTPS-only, with loopback / RFC 1918 / link-local / cloud-metadata / IPv6 ULA / `*.localhost` rejected. Asymmetric posture vs the outbound-webhook check is now closed.
