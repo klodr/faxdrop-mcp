@@ -188,6 +188,14 @@ The MCP does **not** add its own limiter; it forwards FaxDrop's response as a cl
 
 See [ROADMAP.md](docs/ROADMAP.md).
 
+## 🌐 Ecosystem
+
+Other MCP servers in the klodr family:
+
+- 📧 [klodr/gmail-mcp](https://github.com/klodr/gmail-mcp) — Gmail
+- 📠 [klodr/faxdrop-mcp](https://github.com/klodr/faxdrop-mcp) — Send real faxes via FaxDrop (you are here)
+- 🏦 [klodr/mercury-invoicing-mcp](https://github.com/klodr/mercury-invoicing-mcp) — Mercury banking + invoicing
+
 ## 🤝 Contributing
 
 PRs welcome. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the test/build/lint checklist and release process.
