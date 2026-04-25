@@ -453,7 +453,8 @@ for the full story.
 - **Verification paths** documented in [SECURITY.md → Verifying releases](.github/SECURITY.md#verifying-releases): npm CLI provenance, `gh attestation verify`, `cosign verify-blob-attestation`.
 - **Best Practices** [project 12578](https://www.bestpractices.dev/projects/12578) — passing tier; Silver-tier criteria documented in CONTINUITY.md / ASSURANCE_CASE.md / SECURITY.md.
 
-[Unreleased]: https://github.com/klodr/faxdrop-mcp/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/klodr/faxdrop-mcp/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.9...v0.4.0
 [0.3.9]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.8...v0.3.9

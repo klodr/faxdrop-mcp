@@ -259,8 +259,8 @@ describe("FaxDropClient", () => {
   });
 });
 
-describe("FaxDropClient — redirect: \"manual\" SSRF gate", () => {
-  it("passes redirect: \"manual\" to fetch (fail-closed against redirect chains)", async () => {
+describe('FaxDropClient — redirect: "manual" SSRF gate', () => {
+  it('passes redirect: "manual" to fetch (fail-closed against redirect chains)', async () => {
     let capturedInit: RequestInit | undefined;
     global.fetch = (async (_url: URL | string, init?: RequestInit) => {
       capturedInit = init;
