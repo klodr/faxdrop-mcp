@@ -7,6 +7,8 @@
  * Docs: https://www.faxdrop.com/for-developers
  */
 
+import { assertSafeUrl } from "./safe-url.js";
+
 const BASE_URL = "https://www.faxdrop.com";
 
 export interface FaxDropClientOptions {
@@ -110,6 +112,12 @@ export class FaxDropClient {
       "X-API-Key": this.apiKey,
       Accept: "application/json",
     };
+
+    // Runtime SSRF defense: re-resolve the URL hostname and reject if any
+    // record points at a non-`unicast` range. Combined with the boot-time
+    // `validateBaseUrl()` check this closes DNS-rebinding + redirect-into-
+    // private-host gaps without migrating off the native fetch API.
+    await assertSafeUrl(url);
 
     const res = await fetch(url, {
       method,

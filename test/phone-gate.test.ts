@@ -332,6 +332,42 @@ describe("phone-gate", () => {
       },
       10_000, // generous test timeout (default 5 s would race the 3 s lock timeout)
     );
+    itPosix(
+      "acquireLock retry loop does not pin a CPU core under contention",
+      () => {
+        // Regression guard for the busy-wait → Atomics.wait-backed sleep
+        // refactor. The previous busy-wait pinned 100% of one core for
+        // each ~25 ms retry quantum (≈120 retries over the 3 s timeout).
+        // The new Atomics.wait sleep parks the thread cheaply, so CPU
+        // user-time should stay a small fraction of wall-time (well
+        // below 50%, often <5% on modern hardware).
+        const lockFile = join(stateDir, "paired.json.lock");
+        const fd = openSync(lockFile, "wx", 0o600);
+        try {
+          const cpuBefore = process.cpuUsage();
+          const t0 = Date.now();
+          expect(() => pairNumber("+12125551234")).toThrow(/pair-number lock timeout/);
+          const wallMs = Date.now() - t0;
+          const cpuAfter = process.cpuUsage(cpuBefore);
+          const cpuMs = (cpuAfter.user + cpuAfter.system) / 1000;
+          // Sanity: wall time was ~3 s (the lock timeout).
+          expect(wallMs).toBeGreaterThanOrEqual(2_500);
+          // CPU time / wall time ratio: with Atomics.wait it should be a
+          // tiny fraction. With the prior busy-wait it was effectively
+          // 100%. Threshold of 50% gives us strong signal while leaving
+          // CI headroom for noisy neighbors and GC pauses.
+          expect(cpuMs / wallMs).toBeLessThan(0.5);
+        } finally {
+          closeSync(fd);
+          try {
+            unlinkSync(lockFile);
+          } catch {
+            /* may not exist */
+          }
+        }
+      },
+      10_000,
+    );
     itPosix("does NOT pair the number in memory if the disk write fails (transactional)", () => {
       // Pair one number successfully (cache is warm + pairedLoaded=true).
       pairNumber("+12125551234");

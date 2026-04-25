@@ -137,6 +137,15 @@ export function validateTypeAndCountry(input: string): GateResult {
   try {
     phone = parsePhoneNumber(input);
   } catch {
+    // Defensive catch: libphonenumber-js's `parsePhoneNumber` documents
+    // throwing `ParseError` on empty/too-short inputs, but the exact
+    // throw shape (ParseError vs TypeError vs plain Error) and the
+    // exception types it surfaces have changed across minor versions
+    // (1.10.x → 1.12.x). Catching unconditionally and collapsing every
+    // failure mode to a single `layer: "parse"` GateFail keeps the gate
+    // contract stable across `libphonenumber-js` upgrades — the LLM
+    // never sees a leaked exception type or stack frame regardless of
+    // which version is installed.
     return { ok: false, layer: "parse", reason: "Cannot parse phone number" };
   }
   if (!phone.isValid()) {
@@ -233,10 +242,32 @@ export function isPaired(e164: string): boolean {
 }
 
 /**
- * Acquire an exclusive lock on `lockPath` via O_EXCL+O_CREAT. Spins with
- * a small busy-wait (pairing is rare; no event loop yield needed). Stale
- * locks older than `staleMs` are reclaimed (covers a process that crashed
- * mid-write without releasing).
+ * Sleep `ms` milliseconds without burning a CPU and without yielding the
+ * event loop. Backed by `Atomics.wait` on a 1-slot Int32Array — the
+ * standard "synchronous sleep" pattern in Node, used because pairNumber's
+ * caller chain is sync (the wrapping handler is async, but `pairNumber`
+ * itself is invoked from a sync codepath inside the tool).
+ *
+ * The previous busy-wait pinned 100% of one core for the whole 25 ms
+ * quantum and could iterate ~120 times under the 3 s timeout — visible
+ * as a CPU spike in concurrent-MCP scenarios. Atomics.wait blocks the
+ * thread cheaply (the kernel parks it) and returns "timed-out" exactly
+ * `ms` later.
+ */
+const SLEEP_BUF = new SharedArrayBuffer(4);
+const SLEEP_VIEW = new Int32Array(SLEEP_BUF);
+function sleepSync(ms: number): void {
+  // index 0, expectedValue 0 (slot is always 0 — never written), timeoutMs.
+  // Wait returns "timed-out" because the value never changes.
+  Atomics.wait(SLEEP_VIEW, 0, 0, ms);
+}
+
+/**
+ * Acquire an exclusive lock on `lockPath` via O_EXCL+O_CREAT. Sleeps
+ * between retries with `Atomics.wait` (no CPU pin) plus a small jitter
+ * so multiple contending processes don't synchronise on the same wake
+ * tick. Stale locks older than `staleMs` are reclaimed (covers a process
+ * that crashed mid-write without releasing).
  */
 function acquireLock(lockPath: string, timeoutMs = 3000, staleMs = 30_000): number {
   const start = Date.now();
@@ -262,11 +293,12 @@ function acquireLock(lockPath: string, timeoutMs = 3000, staleMs = 30_000): numb
           { cause: err },
         );
       }
-      // Busy-wait ~25ms (no setTimeout — pairNumber is sync).
-      const wakeAt = Date.now() + 25;
-      while (Date.now() < wakeAt) {
-        /* spin */
-      }
+      // Sleep ~5–14 ms (jittered to break tick-synchronisation across
+      // contending processes). Math.random gives us [0, 1); floor(× 10)
+      // → integer 0–9; +5 → 5–14 ms. No CPU pin — the thread is parked
+      // by the kernel until the timeout elapses.
+      const sleepMs = 5 + Math.floor(Math.random() * 10);
+      sleepSync(sleepMs);
     }
   }
 }
