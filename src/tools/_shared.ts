@@ -1,9 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { z, ZodRawShape } from "zod";
 import { wrapToolHandler, type ToolResult } from "../middleware.js";
 import { sanitizeForLlm } from "../sanitize.js";
 
 export type { ToolResult };
+export type { ToolAnnotations };
 
 function asStructured(data: unknown): Record<string, unknown> {
   // structuredContent must be a JSON object (per MCP spec). Wrap primitives
@@ -42,7 +44,16 @@ export function defineTool<S extends ZodRawShape>(
   description: string,
   inputSchema: S,
   handler: (args: z.infer<z.ZodObject<S>>) => Promise<ToolResult>,
+  annotations?: ToolAnnotations,
 ): void {
   const wrapped = wrapToolHandler(name, handler);
-  server.registerTool(name, { description, inputSchema }, wrapped as never);
+  // MCP behavioral annotations (readOnlyHint / destructiveHint /
+  // idempotentHint / openWorldHint) — declared machine-readable so
+  // hosts and rubrics (TDQS / Glama Behavior dimension) can detect
+  // tool semantics without scraping the prose description.
+  server.registerTool(
+    name,
+    annotations ? { description, inputSchema, annotations } : { description, inputSchema },
+    wrapped as never,
+  );
 }
