@@ -57,7 +57,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "ipaddr.js": "^2.3.0",
     "libphonenumber-js": "^1.12.41",
-    "zod": "^4.3.6"
+    "zod": "^4.4.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
