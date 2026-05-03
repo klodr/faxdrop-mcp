@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-03 — Dependency refresh
+
+### Changed
+
+- **`zod`** 4.3.6 → 4.4.2 (production). Schemas drive every tool input/output in this repo; bumped on its own PR (#91) for independent triage. Tests 218/218 pass against the new minor.
+- **`eslint`** 10.2.1 → 10.3.0 (dev, minor).
+- **`typescript-eslint`** 8.59.0 → 8.59.1 (dev, patch).
+
+Pre-empts the weekly dependabot run rather than letting it open the bumps over multiple cycles. Two PRs: dev-deps (#90) and prod-deps (#91). The earlier dependabot-authored bump (#89, typescript-eslint only) was closed because the codecov upload step is gated out of the dependabot context, leaving the merge gate stuck on missing required checks.
+
 ## [0.6.0] - 2026-04-26 — Layered SSRF defense + LOW/INFO security findings
 
 A minor release closing the LOW/INFO findings raised by the
@@ -453,7 +463,8 @@ for the full story.
 - **Verification paths** documented in [SECURITY.md → Verifying releases](.github/SECURITY.md#verifying-releases): npm CLI provenance, `gh attestation verify`, `cosign verify-blob-attestation`.
 - **Best Practices** [project 12578](https://www.bestpractices.dev/projects/12578) — passing tier; Silver-tier criteria documented in CONTINUITY.md / ASSURANCE_CASE.md / SECURITY.md.
 
-[Unreleased]: https://github.com/klodr/faxdrop-mcp/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/klodr/faxdrop-mcp/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/klodr/faxdrop-mcp/compare/v0.3.9...v0.4.0
