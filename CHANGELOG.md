@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1](https://github.com/klodr/faxdrop-mcp/compare/v0.7.0...v0.7.1) (2026-05-07)
+
+
+### Changed
+
+* bump hono from 4.12.14 to 4.12.18 ([#98](https://github.com/klodr/faxdrop-mcp/issues/98)) ([a0775d9](https://github.com/klodr/faxdrop-mcp/commit/a0775d9d31f7e19b0da7028f0e46d2ddc933de9a))
+* bump ip-address and express-rate-limit ([#96](https://github.com/klodr/faxdrop-mcp/issues/96)) ([bad6105](https://github.com/klodr/faxdrop-mcp/commit/bad61055a28dbb5df73c0f347dd3805c86c3adb6))
+* bump the production-dependencies group with 2 updates ([#95](https://github.com/klodr/faxdrop-mcp/issues/95)) ([e03c48e](https://github.com/klodr/faxdrop-mcp/commit/e03c48e15f4516d368856a0435d78fc46fd9c37e))
+* bump typescript-eslint 8.59.1 → 8.59.2 (dev-deps) ([#94](https://github.com/klodr/faxdrop-mcp/issues/94)) ([2252adb](https://github.com/klodr/faxdrop-mcp/commit/2252adb258f20642b659d0d8b110e53f11938428))
+
 ## [Unreleased]
 
 ## [0.7.0] - 2026-05-03 — Dependency refresh
