@@ -112,6 +112,9 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
             hint: err.hint,
           });
         }
+        /* v8 ignore next -- only reached if openInsideOutbox throws something
+           other than a FileIoError (kernel-level fs error, OOM, etc.); the
+           normal paths route through FileIoError. Re-throw rather than mask. */
         throw err;
       }
       const { filePath: _filePath, ...rest } = args;
