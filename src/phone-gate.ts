@@ -151,6 +151,10 @@ export function validateTypeAndCountry(input: string): GateResult {
   if (!phone.isValid()) {
     return { ok: false, layer: "parse", reason: "Invalid phone number" };
   }
+  /* v8 ignore next 7 -- defensive: libphonenumber-js's `isValid()` already
+     filters numbers without a resolvable country, so reaching this branch
+     would require an internal library shape change. Kept as a belt-and-
+     suspenders fail-closed guard, not exercised by tests. */
   if (!phone.country) {
     return {
       ok: false,

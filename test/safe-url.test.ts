@@ -42,4 +42,11 @@ describe("assertSafeUrl — IP literal path (no DNS)", () => {
   it("rejects an invalid URL string", async () => {
     await expect(assertSafeUrl("not-a-url")).rejects.toThrow(/invalid URL/);
   });
+
+  it("accepts a URL object input (not just a string)", async () => {
+    // Covers the rawUrl-as-URL branch on line 33: caller can already have a
+    // parsed URL (e.g. from `new URL(...)` upstream) and pass it through
+    // without re-stringifying.
+    await expect(assertSafeUrl(new URL("https://1.1.1.1/api"))).resolves.toBeUndefined();
+  });
 });
