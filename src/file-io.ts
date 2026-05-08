@@ -191,6 +191,11 @@ export async function openInsideOutbox(filePath: string): Promise<OpenedFile> {
       const { bytesRead } = await fh.read(chunkBuf, 0, READ_CHUNK);
       if (bytesRead === 0) break;
       total += bytesRead;
+      /* v8 ignore next 6 -- TOCTOU guard: catches the file growing between
+         the upfront `stat.size` check and the chunked read (concurrent
+         writer, FUSE mount, etc.). Not deterministically reproducible
+         without a custom fs mock — the upfront stat already covers the
+         common case. */
       if (total > MAX_FILE_BYTES) {
         throw new FileIoError(
           `File too large: ${total} bytes (max ${MAX_FILE_BYTES}).`,
