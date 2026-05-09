@@ -45,6 +45,7 @@
     "format:check": "prettier --check src test",
     "test": "vitest run",
     "version": "node scripts/sync-version.mjs && git add server.json src/server.ts",
+    "prepare": "husky",
     "prepublishOnly": "NODE_ENV=production npm run build",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
@@ -67,6 +68,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-promise": "^7.3.0",
     "fast-check": "^4.7.0",
+    "husky": "^9.1.7",
     "lockfile-lint": "^5.0.0",
     "prettier": "^3.8.3",
     "tsup": "^8.5.1",
