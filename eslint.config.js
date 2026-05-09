@@ -13,7 +13,7 @@ export default tseslint.config(
     ignores: ["dist/", "coverage/", "node_modules/", "test/", "scripts/", "*.mjs", "*.config.*"],
   },
   js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.strict,
   promise.configs["flat/recommended"],
   prettier,
   {
