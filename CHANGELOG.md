@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.3](https://github.com/klodr/faxdrop-mcp/compare/v0.8.2...v0.8.3) (2026-05-09)
+
+
+### Changed
+
+* **release-please:** chain on workflow_run instead of racing CI ([#124](https://github.com/klodr/faxdrop-mcp/issues/124)) ([d7e6d2d](https://github.com/klodr/faxdrop-mcp/commit/d7e6d2dba7cb217c50fb5ac2125beedad24ef6aa))
+* **release:** re-publish 0.8.3 after husky strip-prepare fix ([#126](https://github.com/klodr/faxdrop-mcp/issues/126)) ([26721b6](https://github.com/klodr/faxdrop-mcp/commit/26721b63bcf5ac08a61cbd4f9674b21871d03858))
+* **release:** strip prepare + prepublishOnly before npm publish ([#125](https://github.com/klodr/faxdrop-mcp/issues/125)) ([38286f6](https://github.com/klodr/faxdrop-mcp/commit/38286f69067fac6dbfe2991406db89b527705d1e))
+
 ## [0.8.2](https://github.com/klodr/faxdrop-mcp/compare/v0.8.1...v0.8.2) (2026-05-09)
 
 
