@@ -275,7 +275,7 @@ function sleepSync(ms: number): void {
  */
 function acquireLock(lockPath: string, timeoutMs = 3000, staleMs = 30_000): number {
   const start = Date.now();
-  while (true) {
+  for (;;) {
     try {
       // wx = O_WRONLY | O_CREAT | O_EXCL — atomic create-or-fail.
       return openSync(lockPath, "wx", 0o600);

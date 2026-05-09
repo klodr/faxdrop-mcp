@@ -14,7 +14,7 @@ export default tseslint.config(
     ignores: ["dist/", "coverage/", "node_modules/", "test/", "scripts/", "*.mjs", "*.config.*"],
   },
   js.configs.recommended,
-  ...tseslint.configs.strict,
+  ...tseslint.configs.strictTypeChecked,
   promise.configs["flat/recommended"],
   importX.flatConfigs.recommended,
   importX.flatConfigs.typescript,
