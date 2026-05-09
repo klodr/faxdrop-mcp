@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1](https://github.com/klodr/faxdrop-mcp/compare/v0.8.0...v0.8.1) (2026-05-09)
+
+
+### Fixed
+
+* **husky:** node codepoint count instead of locale-dependent wc -m ([#120](https://github.com/klodr/faxdrop-mcp/issues/120)) ([554c8f8](https://github.com/klodr/faxdrop-mcp/commit/554c8f8d14a2cb3d3fc6e1a70bf643d14be1a72d))
+
 ## [0.8.0](https://github.com/klodr/faxdrop-mcp/compare/v0.7.1...v0.8.0) (2026-05-08)
 
 
