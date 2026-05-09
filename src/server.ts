@@ -120,7 +120,7 @@ export function validateBaseUrl(raw: string): void {
   // self-hosted proxies / observability shims opt in via
   // `FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST=true`, which surfaces a loud
   // stderr warning so the deviation is visible at boot.
-  const isFaxDropHost = FAXDROP_HOSTS.includes(host);
+  const isFaxDropHost = (FAXDROP_HOSTS as readonly string[]).includes(host);
   if (!isFaxDropHost) {
     if (process.env.FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST !== "true") {
       throw new Error(
