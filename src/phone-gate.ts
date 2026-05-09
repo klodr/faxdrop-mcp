@@ -82,7 +82,7 @@ export function getMode(): GateMode {
   return "closed";
 }
 
-function parseList<T extends string>(
+function parseList<T extends string | undefined>(
   env: string | undefined,
   fallback: readonly T[],
 ): readonly T[] {
