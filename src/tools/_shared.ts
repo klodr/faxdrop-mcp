@@ -20,6 +20,9 @@ function asStructured(data: unknown): Record<string, unknown> {
 // JSON.stringify(undefined) returns undefined (not a string) — sanitizeForLlm
 // would then crash on .replace(). Coerce to a JSON-valid representation.
 function jsonText(data: unknown): string {
+  // TS types `JSON.stringify` as `string` but `JSON.stringify(undefined)`
+  // is actually `undefined` at runtime. The `??` is the real coercion.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   return JSON.stringify(data, null, 2) ?? "null";
 }
 

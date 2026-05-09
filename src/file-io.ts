@@ -72,6 +72,10 @@ function bytesStartsWith(bytes: Uint8Array, prefix: Uint8Array): boolean {
 
 function magicMatches(ext: string, bytes: Uint8Array): boolean {
   const sigs = MAGIC_BY_EXT[ext];
+  // `MAGIC_BY_EXT` is typed `Record<string, Sig[]>` so TS thinks `sigs`
+  // is always defined, but a missing key returns undefined at runtime.
+  // The guard is real safety, not dead code.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!sigs) return false;
   return sigs.some((sig) => bytesStartsWith(bytes, sig));
 }
@@ -89,6 +93,9 @@ function magicMatches(ext: string, bytes: Uint8Array): boolean {
 /* v8 ignore start -- guard runs once at module load on Windows only;
    POSIX CI never hits this branch and a faithful test would require a
    second test process with a stubbed `fs.constants` module. */
+// `@types/node` types O_NOFOLLOW as `number`, but on Windows it is
+// undefined at runtime; the check is real cross-platform safety.
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 if (fsConstants.O_NOFOLLOW === undefined) {
   throw new Error(
     "faxdrop-mcp requires fs.constants.O_NOFOLLOW to enforce its symlink TOCTOU guard. " +
@@ -187,7 +194,7 @@ export async function openInsideOutbox(filePath: string): Promise<OpenedFile> {
     const chunkBuf = Buffer.alloc(READ_CHUNK);
     const chunks: Buffer[] = [];
     let total = 0;
-    while (true) {
+    for (;;) {
       const { bytesRead } = await fh.read(chunkBuf, 0, READ_CHUNK);
       if (bytesRead === 0) break;
       total += bytesRead;
