@@ -23,7 +23,7 @@ export const FAX_NUMBER = z
     "Recipient fax number, international (E.164) format with leading + and country code, e.g. +12125551234",
   );
 
-export const EMAIL = z.string().email().describe("Sender email for delivery confirmation.");
+export const EMAIL = z.email().describe("Sender email for delivery confirmation.");
 
 /**
  * Parse the comma-separated list of FaxDrop IDs that both the

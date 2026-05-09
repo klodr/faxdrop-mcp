@@ -139,7 +139,11 @@ export function validateBaseUrl(raw: string): void {
  * InMemoryTransport for tests).
  */
 export function createServer(opts: ServerOptions): McpServer {
-  const log = opts.log ?? ((msg: string) => console.error(msg));
+  const log =
+    opts.log ??
+    ((msg: string) => {
+      console.error(msg);
+    });
 
   // Validate the operator-supplied base URL BEFORE constructing the client —
   // an invalid override fails the server startup, never silently routes to

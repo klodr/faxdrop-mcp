@@ -149,6 +149,7 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
     {
       recipientNumber: FAX_NUMBER,
     },
+    // eslint-disable-next-line @typescript-eslint/require-await -- defineTool expects async handlers; pairing is purely sync
     async ({ recipientNumber }) => {
       if (getMode() !== "pairing") {
         return errorResult({
