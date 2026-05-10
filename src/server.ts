@@ -9,7 +9,7 @@ import { registerAllPrompts } from "./prompts/index.js";
 // still supported via scripts/sync-version.mjs (which also keeps
 // server.json in sync with this constant). Do not edit the literal
 // manually — let one of the two mechanisms own it.
-export const VERSION = "0.8.4"; // x-release-please-version
+export const VERSION = "0.8.5"; // x-release-please-version
 
 // Strict allowlist of FaxDrop hostnames `validateBaseUrl()` accepts without
 // the explicit `FAXDROP_MCP_ALLOW_NON_FAXDROP_HOST=true` opt-in. Single
