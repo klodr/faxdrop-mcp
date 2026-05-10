@@ -33,7 +33,7 @@ import {
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join } from "node:path";
 import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js/max";
-import type { CountryCode, NumberType } from "libphonenumber-js/max";
+import type { CountryCode, PhoneNumberType } from "libphonenumber-js/max";
 
 /**
  * Cheap format-only check (no type/country/gate). Useful for fields like
@@ -48,7 +48,7 @@ export function isValidE164(input: string): boolean {
 
 // --- defaults (overridable by env) ---
 
-const DEFAULT_ALLOWED_TYPES: readonly NumberType[] = Object.freeze([
+const DEFAULT_ALLOWED_TYPES: readonly PhoneNumberType[] = Object.freeze([
   "FIXED_LINE",
   "FIXED_LINE_OR_MOBILE",
   "VOIP",
@@ -87,7 +87,7 @@ function parseList<T extends string | undefined>(
   fallback: readonly T[],
 ): readonly T[] {
   if (!env) return fallback;
-  // Always uppercase: libphonenumber NumberType and CountryCode are both
+  // Always uppercase: libphonenumber PhoneNumberType and CountryCode are both
   // uppercase. Lowercase env input (e.g. `fixed_line,voip`) used to silently
   // miss every comparison.
   const items = env
@@ -97,8 +97,8 @@ function parseList<T extends string | undefined>(
   return items.length > 0 ? (items as T[]) : fallback;
 }
 
-export function getAllowedTypes(): readonly NumberType[] {
-  return parseList<NumberType>(process.env.FAXDROP_MCP_ALLOWED_TYPES, DEFAULT_ALLOWED_TYPES);
+export function getAllowedTypes(): readonly PhoneNumberType[] {
+  return parseList<PhoneNumberType>(process.env.FAXDROP_MCP_ALLOWED_TYPES, DEFAULT_ALLOWED_TYPES);
 }
 
 export function getAllowedCountries(): readonly CountryCode[] {
@@ -114,7 +114,7 @@ export interface GateOk {
   ok: true;
   e164: string;
   country: CountryCode;
-  type: NumberType;
+  type: PhoneNumberType;
 }
 
 export type GateLayer = "parse" | "type" | "country" | "gate";
