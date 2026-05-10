@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.5](https://github.com/klodr/faxdrop-mcp/compare/v0.8.4...v0.8.5) (2026-05-10)
+
+
+### Changed
+
+* add CR title baseline (Conventional Commits + 72c cap) ([#134](https://github.com/klodr/faxdrop-mcp/issues/134)) ([77882ee](https://github.com/klodr/faxdrop-mcp/commit/77882ee1534f3a2bdcaa0909387bdd6ef5394dff))
+* add eslint-plugin-jsonc for JSON file linting ([#135](https://github.com/klodr/faxdrop-mcp/issues/135)) ([e0d1e9c](https://github.com/klodr/faxdrop-mcp/commit/e0d1e9c7bb143407ba5fabe4355bb46afe060774))
+* **codecov:** upload v8 JSON alongside lcov for branch detail ([#131](https://github.com/klodr/faxdrop-mcp/issues/131)) ([6f77764](https://github.com/klodr/faxdrop-mcp/commit/6f777645ffa06b0b3cd824c630000ca2341bfcb0))
+* factor ci.yml via klodr/.github composite actions ([#133](https://github.com/klodr/faxdrop-mcp/issues/133)) ([4905aca](https://github.com/klodr/faxdrop-mcp/commit/4905aca7dcbfba388f196b96c3ea471100f8c330))
+
+
+### Documentation
+
+* add AGENTS.md + CLAUDE.md + copilot-instructions stubs ([#132](https://github.com/klodr/faxdrop-mcp/issues/132)) ([44c95ce](https://github.com/klodr/faxdrop-mcp/commit/44c95ce1dc5ca36d0f780703b50a2c6c3c5eb36c))
+
 ## [0.8.4](https://github.com/klodr/faxdrop-mcp/compare/v0.8.3...v0.8.4) (2026-05-09)
 
 
