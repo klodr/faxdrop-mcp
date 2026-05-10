@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.4](https://github.com/klodr/faxdrop-mcp/compare/v0.8.3...v0.8.4) (2026-05-09)
+
+
+### Changed
+
+* **codecov:** silence GPG trust + multi-language search warnings ([#128](https://github.com/klodr/faxdrop-mcp/issues/128)) ([fb165a1](https://github.com/klodr/faxdrop-mcp/commit/fb165a12f8042362e25f703078678e6043495d13))
+* harmonize cross-repo (typecheck pre-push + fail_ci_if_error) ([#129](https://github.com/klodr/faxdrop-mcp/issues/129)) ([8294275](https://github.com/klodr/faxdrop-mcp/commit/82942753525051067f49f668ded78a8bff71903c))
+
 ## [0.8.3](https://github.com/klodr/faxdrop-mcp/compare/v0.8.2...v0.8.3) (2026-05-09)
 
 
