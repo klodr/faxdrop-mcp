@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.7](https://github.com/klodr/faxdrop-mcp/compare/v0.8.6...v0.8.7) (2026-05-11)
+
+
+### Fixed
+
+* **ci:** align auto-merge filter on klodr-release-please[bot] ([#157](https://github.com/klodr/faxdrop-mcp/issues/157)) ([0f20737](https://github.com/klodr/faxdrop-mcp/commit/0f20737c5fdb0bdc21a7c0ee3d1984d7cb6acd46))
+* **ci:** drop paths filter on actions-pinned ([#156](https://github.com/klodr/faxdrop-mcp/issues/156)) ([37511b3](https://github.com/klodr/faxdrop-mcp/commit/37511b3bab6029783a426cce2b1d4d2db56c8850))
+* **ci:** repin reusable auto-merge to a reachable SHA ([#158](https://github.com/klodr/faxdrop-mcp/issues/158)) ([0d97f72](https://github.com/klodr/faxdrop-mcp/commit/0d97f72222a0335b698ee2c751070c73ec7b5bd6))
+
+
+### Changed
+
+* **lint-staged:** add prettier --write to all globs ([#160](https://github.com/klodr/faxdrop-mcp/issues/160)) ([961bec0](https://github.com/klodr/faxdrop-mcp/commit/961bec065db9df4a1ed8cade908e21ae1b5d6126))
+* migrate ci.yml to reusable-node-ci ([#159](https://github.com/klodr/faxdrop-mcp/issues/159)) ([4201f1b](https://github.com/klodr/faxdrop-mcp/commit/4201f1b7e8c602e9d8108a8b4aeceff3f0c0b058))
+
 ## [0.8.6](https://github.com/klodr/faxdrop-mcp/compare/v0.8.5...v0.8.6) (2026-05-11)
 
 
