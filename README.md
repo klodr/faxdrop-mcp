@@ -105,12 +105,14 @@ Add to `~/.openclaw/openclaw.json`, then restart the gateway (`docker restart op
 Send a fax. Uploads a local document **from the outbox** (default `~/FaxOutbox/`) to a fax number in international (E.164) format.
 
 **Required:**
+
 - `filePath` (string, absolute) — PDF, DOCX, JPEG, or PNG, ≤10 MB. **Must live inside the outbox.**
 - `recipientNumber` (string) — E.164, e.g. `+12125551234`. Subject to the 3-layer phone gate (TYPE → COUNTRY → per-number).
 - `senderName` (string)
 - `senderEmail` (string)
 
 **Optional cover-page fields** (printed only when `includeCover` is true):
+
 - `includeCover` (boolean) — free accounts always include a branded cover; paid accounts default to false
 - `coverNote` (string, ≤500) — message body
 - `recipientName` (≤50), `subject` (≤200), `senderCompany` (≤100), `senderPhone` (validated E.164)
@@ -122,6 +124,7 @@ Send a fax. Uploads a local document **from the outbox** (default `~/FaxOutbox/`
 Add a fax number to the paired whitelist (`~/.faxdrop-mcp/paired.json`). Only effective when `FAXDROP_MCP_NUMBER_GATE=pairing` (default). The number must still pass the TYPE and COUNTRY checks (no bypass). **Always confirm with the user before pairing** — paired numbers can be faxed without further per-number approval.
 
 **Required:**
+
 - `recipientNumber` (string) — E.164
 
 **Returns:** `{ paired, country, type }`
@@ -133,6 +136,7 @@ Check the delivery status of a previously sent fax. Terminal statuses (`delivere
 **Recommended polling cadence**: every ~5s for the first 2 min, then every ~30s for up to 10 min, **stop on terminal status**.
 
 **Required:**
+
 - `faxId` (string)
 
 **Returns:** `{ id, status, recipientNumber?, pages?, completedAt?, _cached? }`
