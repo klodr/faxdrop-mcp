@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.6](https://github.com/klodr/faxdrop-mcp/compare/v0.8.5...v0.8.6) (2026-05-11)
+
+
+### Fixed
+
+* **ci:** gate auto-merge caller on bot login before passing secrets ([#148](https://github.com/klodr/faxdrop-mcp/issues/148)) ([64ff952](https://github.com/klodr/faxdrop-mcp/commit/64ff952bff6444114bf48f5df56d15e35b28eab3))
+* **ci:** re-arm release-please auto-merge on synchronize ([#140](https://github.com/klodr/faxdrop-mcp/issues/140)) ([510ca42](https://github.com/klodr/faxdrop-mcp/commit/510ca424852d57cdf63dca427237ee63a2d01baa))
+* **lint:** drain CR findings + valid globs syntax ([#153](https://github.com/klodr/faxdrop-mcp/issues/153)) ([cb2c73a](https://github.com/klodr/faxdrop-mcp/commit/cb2c73aafa1ea547f4eb3d54469ec1d405274d88))
+* scope release-please app token to least-privilege ([#139](https://github.com/klodr/faxdrop-mcp/issues/139)) ([9dc0761](https://github.com/klodr/faxdrop-mcp/commit/9dc07614a10248b991e1f744a6a3943014386ea1))
+
+
+### Changed
+
+* add auto-merge caller for release-please PRs ([#138](https://github.com/klodr/faxdrop-mcp/issues/138)) ([a6f6078](https://github.com/klodr/faxdrop-mcp/commit/a6f60780cc5e92707257b720cfc9ed2243cab5f9))
+* add pinact config + actions-pinned CI gate ([#151](https://github.com/klodr/faxdrop-mcp/issues/151)) ([786c465](https://github.com/klodr/faxdrop-mcp/commit/786c465abed83bb9d0448c140b1cf8cdacc7324a))
+* add yamllint+markdownlint+commitlint+lint-staged pack ([#149](https://github.com/klodr/faxdrop-mcp/issues/149)) ([54e40f2](https://github.com/klodr/faxdrop-mcp/commit/54e40f2ca682573c5de549bf4c99de324285d4cb))
+* bump github-script v9 + migrate to client-id ([#137](https://github.com/klodr/faxdrop-mcp/issues/137)) ([4d28206](https://github.com/klodr/faxdrop-mcp/commit/4d28206e0d6b0320d9f2b71e66d29e81a46aaed0))
+* bump github/codeql-action from 4.35.3 to 4.35.4 ([#144](https://github.com/klodr/faxdrop-mcp/issues/144)) ([a82e4d5](https://github.com/klodr/faxdrop-mcp/commit/a82e4d567b10b64e9b6dfb6b8c865595a1b6791a))
+* bump sigstore/cosign-installer from 4.1.1 to 4.1.2 ([#143](https://github.com/klodr/faxdrop-mcp/issues/143)) ([adfc22f](https://github.com/klodr/faxdrop-mcp/commit/adfc22fafb3b3f71fc93f3dbb1e8c314f5fd0985))
+* **bundle-analysis:** run on Dependabot PRs to satisfy required check ([#147](https://github.com/klodr/faxdrop-mcp/issues/147)) ([f0ffcdf](https://github.com/klodr/faxdrop-mcp/commit/f0ffcdf7ae9bab3afb25dd469771a8ddccef829c))
+* **dependabot:** use chore(deps) prefix for Conventional Commits ([#141](https://github.com/klodr/faxdrop-mcp/issues/141)) ([10eb568](https://github.com/klodr/faxdrop-mcp/commit/10eb5680c4a44e4a662ac27c0ffefbe9610fe5da))
+* **deps-dev:** bump @types/node 22.19.17→22.19.18 ([#145](https://github.com/klodr/faxdrop-mcp/issues/145)) ([ad566e8](https://github.com/klodr/faxdrop-mcp/commit/ad566e86ec2776dd228b90d871842667a3d9ff65))
+* **deps:** bump actions/github-script SHA ([#142](https://github.com/klodr/faxdrop-mcp/issues/142)) ([e38bb75](https://github.com/klodr/faxdrop-mcp/commit/e38bb75496ea6f86ce6db2a78bbfa1cde3a51113))
+* **deps:** bump libphonenumber-js from 1.12.42 to 1.13.0 in the production-dependencies group across 1 directory ([#146](https://github.com/klodr/faxdrop-mcp/issues/146)) ([7c4212f](https://github.com/klodr/faxdrop-mcp/commit/7c4212ff76cb579c5d5f9b324b13894ae3c8a1ee))
+
 ## [0.8.5](https://github.com/klodr/faxdrop-mcp/compare/v0.8.4...v0.8.5) (2026-05-10)
 
 
