@@ -50,7 +50,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "lint:md": "markdownlint-cli2 \"**/*.md\" \"#dist\""
+    "lint:md": "markdownlint-cli2 \"**/*.md\" \"#CHANGELOG.md\" \"#node_modules\" \"#coverage\" \"#dist\""
   },
   "engines": {
     "node": ">=22.22.2"
