@@ -103,7 +103,7 @@ internal helpers.
 - **Conventional commits** (`feat:`, `fix:`, `docs:`, `chore:`,
   `refactor:`, `test:`, `ci:`, `build:`).
 - **Signed commits required.** Pre-push hook verifies via `%G?` and
-  rejects anything other than `G`/`U`/`E`. Configure SSH commit
+  rejects anything other than `G`/`U`/`X`/`Y`. Configure SSH commit
   signing or set `commit.gpgsign=true`.
 - **Subject ≤72 characters.** Pre-push counts unicode code points
   (not bytes) so emoji and accented characters count correctly.
@@ -114,7 +114,8 @@ internal helpers.
 
 For every new commit being pushed:
 
-1. Signature is `G`/`U`/`E`.
+1. Signature is `G`/`U`/`X`/`Y` (good / unknown-trust / expired-signature
+   / expired-key — `B`/`R`/`E`/`N` are rejected).
 2. Subject ≤72 chars (unicode-aware).
 
 Then once per push:
@@ -123,7 +124,10 @@ Then once per push:
 2. `npm run lint`
 3. `npm run typecheck`
 4. `npm run test`
-5. `npm audit --audit-level=high`
+
+`npm audit` runs server-side via the Dependabot / OSV-Scanner workflows
+where intermittent advisory-state failures retry naturally — it is
+intentionally not run locally on push.
 
 Bypass with `git push --no-verify` only when the hook itself is wrong
 (rare). The bypass is recorded in the local reflog.
