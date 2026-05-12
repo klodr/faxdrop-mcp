@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0](https://github.com/klodr/faxdrop-mcp/compare/v0.8.8...v0.9.0) (2026-05-12)
+
+
+### Added
+
+* **tools:** declare openWorldHint:true on every tool ([#178](https://github.com/klodr/faxdrop-mcp/issues/178)) ([ade1302](https://github.com/klodr/faxdrop-mcp/commit/ade1302e480bc8ae4fad2411e60b0f1431755da6))
+
+
+### Fixed
+
+* **verify-release:** pin cosign predicate to SLSA Provenance v1 ([#177](https://github.com/klodr/faxdrop-mcp/issues/177)) ([fbc958f](https://github.com/klodr/faxdrop-mcp/commit/fbc958fc689d3050404644e2dc5c1726f8b578f4))
+
+
+### Changed
+
+* **lint:** reactivate 6 markdownlint rules previously disabled ([#176](https://github.com/klodr/faxdrop-mcp/issues/176)) ([8a80c3c](https://github.com/klodr/faxdrop-mcp/commit/8a80c3cb815d0c5a0c52c0a48d2f3625e7950b19))
+
 ## [0.8.8](https://github.com/klodr/faxdrop-mcp/compare/v0.8.7...v0.8.8) (2026-05-12)
 
 
