@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.8](https://github.com/klodr/faxdrop-mcp/compare/v0.8.7...v0.8.8) (2026-05-12)
+
+
+### Fixed
+
+* **pre-commit:** call ./node_modules/.bin/lint-staged directly ([#168](https://github.com/klodr/faxdrop-mcp/issues/168)) ([470d528](https://github.com/klodr/faxdrop-mcp/commit/470d528bfc87ce1173be263333e4963b5da0bc52))
+
+
+### Changed
+
+* add leak-detect caller workflow ([#170](https://github.com/klodr/faxdrop-mcp/issues/170)) ([4939f3b](https://github.com/klodr/faxdrop-mcp/commit/4939f3b72a38cfcd5521a5ec1f142c3870987433))
+* bump actions/checkout from 4.2.2 to 6.0.2 ([#164](https://github.com/klodr/faxdrop-mcp/issues/164)) ([d737937](https://github.com/klodr/faxdrop-mcp/commit/d737937fa74d93f228d23bc8bc281134a4c00cae))
+* **ci:** migrate leak-detect to GitHub App credentials ([#171](https://github.com/klodr/faxdrop-mcp/issues/171)) ([9415453](https://github.com/klodr/faxdrop-mcp/commit/9415453a45ee19ad698440ced1722e96561048a2))
+* **deps:** bump libphonenumber-js from 1.13.0 to 1.13.1 in the production-dependencies group ([#166](https://github.com/klodr/faxdrop-mcp/issues/166)) ([5253647](https://github.com/klodr/faxdrop-mcp/commit/5253647a58b88e45a851a986c01197701a07ba36))
+* fix four workflow errors (pinact, gitleaks, auto-merge, coderabbit) ([#175](https://github.com/klodr/faxdrop-mcp/issues/175)) ([e8342fc](https://github.com/klodr/faxdrop-mcp/commit/e8342fcd79df0139138104ebf526b980d54ee528))
+* **leak-detect:** re-pin reusable workflow to fix yq checksum SHA ([#174](https://github.com/klodr/faxdrop-mcp/issues/174)) ([a0059be](https://github.com/klodr/faxdrop-mcp/commit/a0059bedf6372583c35aac1a04eb431354c8fa6c))
+* **node:** align .npmrc rationale + bump .nvmrc to 22.22.2 (CVE floor) ([#167](https://github.com/klodr/faxdrop-mcp/issues/167)) ([7750046](https://github.com/klodr/faxdrop-mcp/commit/77500469e801f2ddf5dad05ed616f45d544544c3))
+* **pre-commit:** warn on missing system tooling (yamllint) ([#162](https://github.com/klodr/faxdrop-mcp/issues/162)) ([c5876b7](https://github.com/klodr/faxdrop-mcp/commit/c5876b73d4a46eae621116df52c6720f4e293961))
+* **pre-push:** sync with canonical template (SC2034 + drop npm audit) ([#163](https://github.com/klodr/faxdrop-mcp/issues/163)) ([ede1572](https://github.com/klodr/faxdrop-mcp/commit/ede1572da2f7fe0adb84e9eda1a84a3fa3f85fbc))
+* **scripts:** canonicalise sync-version with ecosystem ([#173](https://github.com/klodr/faxdrop-mcp/issues/173)) ([e06d303](https://github.com/klodr/faxdrop-mcp/commit/e06d30383be7da19ac171798f0b18d990c128feb))
+* **test:** harmonise vitest coverage config with klodr/* ecosystem ([#172](https://github.com/klodr/faxdrop-mcp/issues/172)) ([93c305b](https://github.com/klodr/faxdrop-mcp/commit/93c305b79952befb8695b04153662f007d16d8df))
+
 ## [0.8.7](https://github.com/klodr/faxdrop-mcp/compare/v0.8.6...v0.8.7) (2026-05-11)
 
 
