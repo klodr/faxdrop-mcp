@@ -16,7 +16,6 @@ import { getCachedStatus, maybeCacheStatus } from "../status-cache.js";
 import { EMAIL, FAX_NUMBER } from "../schemas.js";
 
 // Re-export for anyone who already depends on them being exposed here.
-export { FAX_NUMBER, EMAIL };
 
 const SENDER_PHONE = z
   .string()
@@ -104,18 +103,18 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
       let opened;
       try {
         opened = await openInsideOutbox(args.filePath);
-      } catch (err) {
-        if (err instanceof FileIoError) {
+      } catch (error) {
+        if (error instanceof FileIoError) {
           return errorResult({
             error_type: "bad_request",
-            message: err.message,
-            hint: err.hint,
+            message: error.message,
+            hint: error.hint,
           });
         }
         /* v8 ignore next -- only reached if openInsideOutbox throws something
            other than a FileIoError (kernel-level fs error, OOM, etc.); the
            normal paths route through FileIoError. Re-throw rather than mask. */
-        throw err;
+        throw error;
       }
       const { filePath: _filePath, ...rest } = args;
       void _filePath;
@@ -218,3 +217,5 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
     { title: "Get Fax Status", readOnlyHint: true, openWorldHint: true },
   );
 }
+
+export { FAX_NUMBER, EMAIL } from "../schemas.js";

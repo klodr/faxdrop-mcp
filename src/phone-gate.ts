@@ -227,13 +227,13 @@ function loadPaired(): Set<string> {
     // the recovery path (the user can inspect the prior file via .tmp/backup
     // if they care).
     pairedLoaded = true;
-  } catch (err) {
-    const code = (err as NodeJS.ErrnoException).code;
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
     if (code === "ENOENT") {
       // No file yet — empty, loaded, safe to write.
       pairedLoaded = true;
     } else {
-      console.error(`[phone-gate] failed to read ${file}: ${(err as Error).message}`);
+      console.error(`[phone-gate] failed to read ${file}: ${(error as Error).message}`);
       pairedLoaded = false;
     }
   }
@@ -279,8 +279,8 @@ function acquireLock(lockPath: string, timeoutMs = 3000, staleMs = 30_000): numb
     try {
       // wx = O_WRONLY | O_CREAT | O_EXCL — atomic create-or-fail.
       return openSync(lockPath, "wx", 0o600);
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
       // Stale lock recovery: a previous process may have crashed mid-write.
       try {
         const age = Date.now() - statSync(lockPath).mtimeMs;
@@ -294,7 +294,7 @@ function acquireLock(lockPath: string, timeoutMs = 3000, staleMs = 30_000): numb
       if (Date.now() - start > timeoutMs) {
         throw new Error(
           `pair-number lock timeout after ${timeoutMs}ms (${lockPath}); another MCP instance may be hung`,
-          { cause: err },
+          { cause: error },
         );
       }
       // Sleep ~5–14 ms (jittered to break tick-synchronisation across
@@ -357,15 +357,15 @@ export function pairNumber(e164: string): void {
       if (Array.isArray(parsed) && parsed.every((x) => typeof x === "string")) {
         onDisk = parsed;
       }
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
 
     // Build a snapshot (live cache is mutated only after rename succeeds —
     // otherwise the in-memory allow-list would diverge from disk on failure).
     const next = new Set<string>([...onDisk, ...set, e164]);
     const tmp = `${file}.${process.pid}.${randomUUID()}.tmp`;
-    writeFileSync(tmp, JSON.stringify([...next].sort()), { mode: 0o600 });
+    writeFileSync(tmp, JSON.stringify([...next].toSorted()), { mode: 0o600 });
     renameSync(tmp, file);
     pairedCache = next;
   } finally {
