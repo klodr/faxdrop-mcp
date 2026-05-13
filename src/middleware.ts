@@ -231,14 +231,14 @@ export function logAudit(
     tool: toolName,
     result,
     args: redactForAudit(args, AUDIT_SAFE_ARG_KEYS_SET),
-    ...(response !== undefined
-      ? { response: redactForAudit(response, AUDIT_SAFE_RESPONSE_KEYS_SET) }
-      : {}),
+    ...(response === undefined
+      ? {}
+      : { response: redactForAudit(response, AUDIT_SAFE_RESPONSE_KEYS_SET) }),
   });
   try {
     appendFileSync(path, entry + "\n", { mode: 0o600 });
-  } catch (err) {
-    console.error(`[audit] failed to write to ${path}:`, (err as Error).message);
+  } catch (error) {
+    console.error(`[audit] failed to write to ${path}:`, (error as Error).message);
   }
 }
 
@@ -268,14 +268,14 @@ function safeLogAudit(
 ): void {
   try {
     logAudit(toolName, args, result, response);
-  } catch (auditErr) {
+  } catch (error) {
     /* v8 ignore next -- defensive catch: logAudit already swallows
        appendFileSync failures internally, so this branch only fires on
        a JSON.stringify / Date format throw — not exercisable from a
        unit test without mocking the import (which would over-couple
        the test to implementation detail). The guarantee is the
        `try/catch` presence itself. */
-    console.error(`[middleware] audit log failed for ${toolName}:`, (auditErr as Error).message);
+    console.error(`[middleware] audit log failed for ${toolName}:`, (error as Error).message);
   }
 }
 
@@ -337,33 +337,33 @@ export function wrapToolHandler<TArgs>(
       if (isWriteOp)
         safeLogAudit(toolName, args, result.isError ? "error" : "ok", result.structuredContent);
       return result;
-    } catch (err) {
+    } catch (error) {
       safeLogAudit(toolName, args, "error");
-      if (err instanceof FaxDropError) {
+      if (error instanceof FaxDropError) {
         const hint =
-          err.status === 402
+          error.status === 402
             ? " (No fax credits remaining — top up at https://faxdrop.com/pricing)"
-            : err.status === 429 && err.retryAfter
-              ? ` (Rate-limited by FaxDrop; retry in ${err.retryAfter}s.)`
-              : err.hint
-                ? ` Hint: ${err.hint}`
+            : error.status === 429 && error.retryAfter
+              ? ` (Rate-limited by FaxDrop; retry in ${error.retryAfter}s.)`
+              : error.hint
+                ? ` Hint: ${error.hint}`
                 : "";
         // err.message and err.hint can be reflected from the FaxDrop API
         // body (attacker-influenced), so route them through sanitize+fence
         // and surface the structured form for programmatic consumers.
         const errorPayload = {
-          error_type: err.errorType ?? "fax_error",
-          status: err.status,
-          message: err.message,
-          hint: err.hint,
-          retryAfter: err.retryAfter,
+          error_type: error.errorType ?? "fax_error",
+          status: error.status,
+          message: error.message,
+          hint: error.hint,
+          retryAfter: error.retryAfter,
         };
         return {
           content: [
             {
               type: "text",
               text: sanitizeForLlm(
-                `FaxDrop API error ${err.status}${err.errorType ? ` (${err.errorType})` : ""}: ${err.message}${hint}`,
+                `FaxDrop API error ${error.status}${error.errorType ? ` (${error.errorType})` : ""}: ${error.message}${hint}`,
               ),
             },
           ],
@@ -371,7 +371,7 @@ export function wrapToolHandler<TArgs>(
           isError: true,
         };
       }
-      throw err;
+      throw error;
     }
   };
 }
