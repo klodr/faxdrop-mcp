@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1](https://github.com/klodr/faxdrop-mcp/compare/v0.9.0...v0.9.1) (2026-05-13)
+
+
+### Fixed
+
+* **ci:** add top-level permissions: contents: read to auto-merge ([#180](https://github.com/klodr/faxdrop-mcp/issues/180)) ([193591a](https://github.com/klodr/faxdrop-mcp/commit/193591a1c0e32c9cc29bc725481b0ac63759640b))
+
+
+### Changed
+
+* **lint:** adopt eslint-plugin-unicorn (pass 1) ([#182](https://github.com/klodr/faxdrop-mcp/issues/182)) ([ac93b46](https://github.com/klodr/faxdrop-mcp/commit/ac93b4649d9e2532a52324bbbfab91fb858c4d56))
+
 ## [0.9.0](https://github.com/klodr/faxdrop-mcp/compare/v0.8.8...v0.9.0) (2026-05-12)
 
 
