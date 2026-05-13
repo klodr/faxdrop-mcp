@@ -1,7 +1,7 @@
 import { mkdtempSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { _resetOutboxCache, assertInsideOutbox, getOutboxDir } from "../src/file-jail.js";
+import { _resetOutboxCache, assertInsideOutbox, getOutboxDirectory } from "../src/file-jail.js";
 
 describe("file-jail", () => {
   let tmpDir: string;
@@ -18,18 +18,18 @@ describe("file-jail", () => {
     _resetOutboxCache();
   });
 
-  describe("getOutboxDir", () => {
+  describe("getOutboxDirectory", () => {
     it("uses FAXDROP_MCP_WORK_DIR when set, and creates it (mode 0o700)", () => {
       const target = join(tmpDir, "outbox-from-env");
       process.env.FAXDROP_MCP_WORK_DIR = target;
-      expect(getOutboxDir()).toBe(target);
+      expect(getOutboxDirectory()).toBe(target);
       const stat = statSync(target);
       expect(stat.mode & 0o777).toBe(0o700);
     });
 
     it("rejects a relative FAXDROP_MCP_WORK_DIR", () => {
       process.env.FAXDROP_MCP_WORK_DIR = "relative/path";
-      expect(() => getOutboxDir()).toThrow(/must be an absolute path/);
+      expect(() => getOutboxDirectory()).toThrow(/must be an absolute path/);
     });
 
     it("returns ~/FaxOutbox by default and ensures it exists (mode 0o700)", () => {
@@ -37,7 +37,7 @@ describe("file-jail", () => {
       const realHome = process.env.HOME;
       process.env.HOME = tmpDir;
       try {
-        const dir = getOutboxDir();
+        const dir = getOutboxDirectory();
         expect(dir).toBe(join(tmpDir, "FaxOutbox"));
         const stat = statSync(dir);
         expect(stat.mode & 0o777).toBe(0o700);
@@ -85,12 +85,12 @@ describe("file-jail", () => {
     });
   });
 
-  describe("getOutboxDir caching", () => {
+  describe("getOutboxDirectory caching", () => {
     it("returns the cached canonical path on the second call (no re-mkdir)", () => {
       const target = join(tmpDir, "outbox-cache");
       process.env.FAXDROP_MCP_WORK_DIR = target;
-      const first = getOutboxDir();
-      const second = getOutboxDir();
+      const first = getOutboxDirectory();
+      const second = getOutboxDirectory();
       expect(first).toBe(second);
     });
 
@@ -98,9 +98,9 @@ describe("file-jail", () => {
       const targetA = join(tmpDir, "outbox-A");
       const targetB = join(tmpDir, "outbox-B");
       process.env.FAXDROP_MCP_WORK_DIR = targetA;
-      const a = getOutboxDir();
+      const a = getOutboxDirectory();
       process.env.FAXDROP_MCP_WORK_DIR = targetB;
-      const b = getOutboxDir();
+      const b = getOutboxDirectory();
       expect(a).not.toBe(b);
       expect(b).toContain("outbox-B");
     });

@@ -193,16 +193,16 @@ export function validateTypeAndCountry(input: string): GateResult {
 
 // --- paired.json storage (mode 0o600) ---
 
-function getStateDir(): string {
-  const dir = process.env.FAXDROP_MCP_STATE_DIR || join(homedir(), ".faxdrop-mcp");
-  if (!isAbsolute(dir)) {
-    throw new Error(`FAXDROP_MCP_STATE_DIR must be an absolute path; got: ${dir}`);
+function getStateDirectory(): string {
+  const directory = process.env.FAXDROP_MCP_STATE_DIR || join(homedir(), ".faxdrop-mcp");
+  if (!isAbsolute(directory)) {
+    throw new Error(`FAXDROP_MCP_STATE_DIR must be an absolute path; got: ${directory}`);
   }
-  return dir;
+  return directory;
 }
 
 function getPairedFile(): string {
-  return join(getStateDir(), "paired.json");
+  return join(getStateDirectory(), "paired.json");
 }
 
 let pairedCache: Set<string> | null = null;
