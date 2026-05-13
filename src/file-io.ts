@@ -64,8 +64,8 @@ const MAGIC_BY_EXT: Record<string, readonly Uint8Array[]> = {
 
 function bytesStartsWith(bytes: Uint8Array, prefix: Uint8Array): boolean {
   if (bytes.length < prefix.length) return false;
-  for (const [i, byte] of prefix.entries()) {
-    if (bytes[i] !== byte) return false;
+  for (const [index, byte] of prefix.entries()) {
+    if (bytes[index] !== byte) return false;
   }
   return true;
 }
