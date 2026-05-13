@@ -29,7 +29,7 @@ let outboxEnsured: { requested: string; canonical: string } | null = null;
  * the env var is unset and the directory doesn't exist yet. Throws on a
  * non-absolute env override.
  */
-export function getOutboxDir(): string {
+export function getOutboxDirectory(): string {
   const requested = process.env.FAXDROP_MCP_WORK_DIR ?? join(homedir(), DEFAULT_OUTBOX);
   if (process.env.FAXDROP_MCP_WORK_DIR && !isAbsolute(requested)) {
     throw new Error(`FAXDROP_MCP_WORK_DIR must be an absolute path; got: ${requested}`);
@@ -51,7 +51,7 @@ export function getOutboxDir(): string {
  * caught (a symlink target outside the outbox is rejected).
  */
 export function assertInsideOutbox(canonicalPath: string): void {
-  const outbox = getOutboxDir();
+  const outbox = getOutboxDirectory();
   // Normalize trailing separator for the prefix test: an outbox of
   // `/Users/me/FaxOutbox` must NOT match `/Users/me/FaxOutbox-other/x`.
   const prefix = outbox.endsWith(sep) ? outbox : outbox + sep;

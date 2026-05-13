@@ -56,7 +56,36 @@ export default tseslint.config(
       //   - `no-array-reduce` — `reduce()` is idiomatic functional JS,
       //     intentionally used in tool aggregation. Stylistic, not
       //     correctness.
-      "unicorn/prevent-abbreviations": "off",
+      "unicorn/prevent-abbreviations": [
+        "error",
+        {
+          replacements: {
+            args: false,
+            arg: false,
+            opts: false,
+            msg: false,
+            err: false,
+            res: false,
+            val: false,
+            tmp: false,
+            env: false,
+            pkg: false,
+            obj: false,
+            params: false,
+            ext: false,
+          },
+          // ITU-T E.164 is the phone-numbering standard; the rule
+          // proposes "error164" / "event164" which are nonsensical
+          // here. allowList exempts specific full identifier names
+          // (replacements operate on abbreviation prefixes, which is
+          // why setting `e164: false` would not have helped).
+          allowList: {
+            e164: true,
+            E164: true,
+            isValidE164: true,
+          },
+        },
+      ],
       "unicorn/no-null": "off",
       "unicorn/no-array-reduce": "off",
       // CLI / entry-point rules — this package SHIPS a CLI:
