@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2](https://github.com/klodr/faxdrop-mcp/compare/v0.9.1...v0.9.2) (2026-05-13)
+
+
+### Changed
+
+* **lint:** enable prevent-abbreviations with klodr/* allowList ([#183](https://github.com/klodr/faxdrop-mcp/issues/183)) ([f1c7d82](https://github.com/klodr/faxdrop-mcp/commit/f1c7d8275ac9e283ce62bdfbfaca9b52fac1b03e))
+
 ## [0.9.1](https://github.com/klodr/faxdrop-mcp/compare/v0.9.0...v0.9.1) (2026-05-13)
 
 
