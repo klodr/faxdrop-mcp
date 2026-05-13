@@ -4,9 +4,6 @@ import { z, ZodRawShape } from "zod";
 import { wrapToolHandler, type ToolResult } from "../middleware.js";
 import { sanitizeForLlm } from "../sanitize.js";
 
-export type { ToolResult };
-export type { ToolAnnotations };
-
 function asStructured(data: unknown): Record<string, unknown> {
   // structuredContent must be a JSON object (per MCP spec). Wrap primitives
   // and arrays in `{ value: ... }` so the field is always present and the
@@ -59,3 +56,6 @@ export function defineTool<S extends ZodRawShape>(
   // silently shipping a tool with no hint set.
   server.registerTool(name, { description, inputSchema, annotations }, wrapped as never);
 }
+
+export { type ToolResult } from "../middleware.js";
+export { type ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";

@@ -64,8 +64,8 @@ const MAGIC_BY_EXT: Record<string, readonly Uint8Array[]> = {
 
 function bytesStartsWith(bytes: Uint8Array, prefix: Uint8Array): boolean {
   if (bytes.length < prefix.length) return false;
-  for (let i = 0; i < prefix.length; i++) {
-    if (bytes[i] !== prefix[i]) return false;
+  for (const [i, byte] of prefix.entries()) {
+    if (bytes[i] !== byte) return false;
   }
   return true;
 }
@@ -142,9 +142,9 @@ export async function openInsideOutbox(filePath: string): Promise<OpenedFile> {
   let info;
   try {
     info = await lstat(requested);
-  } catch (err) {
+  } catch (error) {
     throw new FileIoError(
-      `Cannot access file: ${requested} (${(err as Error).message})`,
+      `Cannot access file: ${requested} (${(error as Error).message})`,
       "Verify the path exists and is readable.",
     );
   }
@@ -160,9 +160,9 @@ export async function openInsideOutbox(filePath: string): Promise<OpenedFile> {
   // (default ~/FaxOutbox/). Symlinks pointing outside are rejected here.
   try {
     assertInsideOutbox(canonical);
-  } catch (err) {
+  } catch (error) {
     throw new FileIoError(
-      (err as Error).message,
+      (error as Error).message,
       "Move the document into the outbox before faxing.",
     );
   }
