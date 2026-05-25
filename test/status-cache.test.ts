@@ -11,8 +11,9 @@ describe("status-cache", () => {
   afterEach(() => _resetStatusCache());
 
   describe("isTerminalStatus", () => {
-    it("recognizes the 3 terminal statuses", () => {
+    it("recognizes the terminal statuses (canonical + legacy alias)", () => {
       expect(isTerminalStatus("completed")).toBe(true);
+      expect(isTerminalStatus("delivered")).toBe(true); // legacy doc name, see status-cache.ts JSDoc
       expect(isTerminalStatus("failed")).toBe(true);
       expect(isTerminalStatus("partial")).toBe(true);
     });

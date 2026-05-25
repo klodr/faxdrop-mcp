@@ -8,10 +8,11 @@
  * out of their context.
  *
  * Naming note: the public FaxDrop reference at faxdrop.com/for-developers
- * still documents the terminal-success status as `delivered`, but the live
- * API has been observed (2026-05) to return `completed` instead. This module
- * matches the wire reality, not the doc — re-check if FaxDrop publishes a
- * migration note.
+ * documents the terminal-success status as `delivered`, but the live API
+ * has been observed (2026-05) to return `completed` instead. Both names are
+ * accepted as terminal here so the cache works regardless of which one the
+ * wire ends up settling on; if FaxDrop later picks one canonically, the
+ * other can be dropped without changing the cache contract.
  *
  * This module caches terminal statuses in-memory and short-circuits
  * subsequent get_fax_status calls for the same faxId, returning the cached
@@ -24,7 +25,12 @@
  */
 
 const MAX_ENTRIES = 100;
-const TERMINAL_STATUSES: ReadonlySet<string> = new Set(["completed", "failed", "partial"]);
+const TERMINAL_STATUSES: ReadonlySet<string> = new Set([
+  "completed", // canonical (wire-observed 2026-05)
+  "delivered", // legacy (documented at faxdrop.com/for-developers)
+  "failed",
+  "partial",
+]);
 
 // Only these fields from a FaxDrop status response are kept in the cache and
 // re-served on a hit. Anything else (extra fields invented by a malicious
