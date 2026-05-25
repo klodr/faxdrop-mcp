@@ -291,11 +291,11 @@ describe("Tools wired through the server", () => {
   }
 
   it("faxdrop_get_fax_status returns the JSON status", async () => {
-    mockJsonResponse({ id: "fax_abc", status: "delivered" });
+    mockJsonResponse({ id: "fax_abc", status: "completed" });
     const result = await callTool("faxdrop_get_fax_status", { faxId: "fax_abc" });
     const content = (result as { content: { type: string; text: string }[] }).content[0];
     expect(content.type).toBe("text");
-    expect(content.text).toContain('"status": "delivered"');
+    expect(content.text).toContain('"status": "completed"');
   });
 
   it("faxdrop_send_fax returns the create response", async () => {
@@ -366,7 +366,7 @@ describe("Tools wired through the server", () => {
   });
 
   it("returns structuredContent (parseable JSON) alongside the fenced text", async () => {
-    mockJsonResponse({ id: "fax_abc", status: "delivered", pages: 2 });
+    mockJsonResponse({ id: "fax_abc", status: "completed", pages: 2 });
     const result = (await callTool("faxdrop_get_fax_status", { faxId: "fax_abc" })) as {
       content: { type: string; text: string }[];
       structuredContent?: Record<string, unknown>;
@@ -376,7 +376,7 @@ describe("Tools wired through the server", () => {
     // structuredContent is the raw object — programmatic consumers use this.
     expect(result.structuredContent).toMatchObject({
       id: "fax_abc",
-      status: "delivered",
+      status: "completed",
       pages: 2,
     });
   });
@@ -422,7 +422,7 @@ describe("Tools wired through the server", () => {
       ok: true,
       status: 200,
       statusText: "OK",
-      text: async () => JSON.stringify({ id: "fax_zzz", status: "delivered", pages: 4 }),
+      text: async () => JSON.stringify({ id: "fax_zzz", status: "completed", pages: 4 }),
       headers: { get: () => null },
     }));
     global.fetch = fetchSpy as unknown as typeof fetch;
@@ -431,7 +431,7 @@ describe("Tools wired through the server", () => {
       content: { type: string; text: string }[];
       structuredContent?: Record<string, unknown>;
     };
-    expect(first.structuredContent).toMatchObject({ status: "delivered", pages: 4 });
+    expect(first.structuredContent).toMatchObject({ status: "completed", pages: 4 });
     expect(first.structuredContent).not.toHaveProperty("_cached");
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     // Second call: short-circuit — fetch must NOT be called again.
@@ -440,7 +440,7 @@ describe("Tools wired through the server", () => {
       structuredContent?: Record<string, unknown>;
     };
     expect(second.structuredContent).toMatchObject({
-      status: "delivered",
+      status: "completed",
       pages: 4,
       _cached: true,
     });

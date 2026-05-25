@@ -101,7 +101,7 @@ export function registerFaxPrompts(server: McpServer): void {
               `Once the fax is submitted and you have the returned \`faxId\`, ` +
               `poll \`faxdrop_get_fax_status\` every ~5 seconds for the first 2 minutes, ` +
               `then every ~30 seconds for up to 10 minutes, and stop as soon as ` +
-              `status is terminal (\`delivered\`, \`failed\`, or \`partial\`). ` +
+              `status is terminal (\`completed\`, \`failed\`, or \`partial\`). ` +
               `Report back the final status, duration, and — if the fax failed — ` +
               `the failure reason from the FaxDrop response.`,
           },
@@ -133,7 +133,7 @@ export function registerFaxPrompts(server: McpServer): void {
                 `recipient number, and duration.\n\n` +
                 `Return a single compact markdown table with columns: ` +
                 `\`faxId\` | \`status\` | \`to\` | \`duration\` | \`notes\`. ` +
-                `Group terminal statuses (\`delivered\`/\`failed\`/\`partial\`) at the top, ` +
+                `Group terminal statuses (\`completed\`/\`failed\`/\`partial\`) at the top, ` +
                 `in-flight (\`queued\`/\`sending\`) below. ` +
                 `Do NOT re-poll a terminal fax — the MCP short-circuits those via its ` +
                 `status cache, so a second call is both redundant and counts toward the quota.`,

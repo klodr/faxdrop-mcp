@@ -53,14 +53,14 @@ describe("FaxDropClient", () => {
         ok: true,
         status: 200,
         statusText: "OK",
-        text: async () => JSON.stringify({ id: "fax_abc", status: "delivered" }),
+        text: async () => JSON.stringify({ id: "fax_abc", status: "completed" }),
         headers: { get: () => null },
       };
     }) as unknown as typeof fetch;
 
     const client = new FaxDropClient({ apiKey: "fd_live_secret" });
     const result = await client.getFaxStatus("fax_abc");
-    expect(result).toEqual({ id: "fax_abc", status: "delivered" });
+    expect(result).toEqual({ id: "fax_abc", status: "completed" });
     expect(capturedUrl).toContain("/api/v1/fax/fax_abc");
     expect(capturedInit?.method).toBe("GET");
     const headers = capturedInit?.headers as Record<string, string>;
