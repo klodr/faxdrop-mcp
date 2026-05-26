@@ -3,8 +3,8 @@ import { errorResult, textResult } from "../src/tools/_shared.js";
 describe("_shared helpers", () => {
   describe("textResult / errorResult — structuredContent wrapping", () => {
     it("passes a JSON object through to structuredContent unchanged", () => {
-      const r = textResult({ id: "fax_1", status: "delivered" });
-      expect(r.structuredContent).toEqual({ id: "fax_1", status: "delivered" });
+      const r = textResult({ id: "fax_1", status: "completed" });
+      expect(r.structuredContent).toEqual({ id: "fax_1", status: "completed" });
       expect(r.isError).toBeUndefined();
     });
 

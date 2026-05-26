@@ -1,11 +1,18 @@
 /**
  * Anti-poll-storm cache for `faxdrop_get_fax_status`.
  *
- * FaxDrop's status response moves through `queued → sending → delivered |
- * failed | partial`. The first three are intermediate (subject to change);
+ * FaxDrop's status response moves through `queued → sending → completed |
+ * failed | partial`. The first two are intermediate (subject to change);
  * the last three are TERMINAL — FaxDrop will never change them. Yet LLMs
- * sometimes re-poll a delivered fax because the previous response has fallen
+ * sometimes re-poll a completed fax because the previous response has fallen
  * out of their context.
+ *
+ * Naming note: the public FaxDrop reference at faxdrop.com/for-developers
+ * documents the terminal-success status as `delivered`, but the live API
+ * has been observed (2026-05) to return `completed` instead. Both names are
+ * accepted as terminal here so the cache works regardless of which one the
+ * wire ends up settling on; if FaxDrop later picks one canonically, the
+ * other can be dropped without changing the cache contract.
  *
  * This module caches terminal statuses in-memory and short-circuits
  * subsequent get_fax_status calls for the same faxId, returning the cached
@@ -18,7 +25,12 @@
  */
 
 const MAX_ENTRIES = 100;
-const TERMINAL_STATUSES: ReadonlySet<string> = new Set(["delivered", "failed", "partial"]);
+const TERMINAL_STATUSES: ReadonlySet<string> = new Set([
+  "completed", // canonical (wire-observed 2026-05)
+  "delivered", // legacy (documented at faxdrop.com/for-developers)
+  "failed",
+  "partial",
+]);
 
 // Only these fields from a FaxDrop status response are kept in the cache and
 // re-served on a hit. Anything else (extra fields invented by a malicious

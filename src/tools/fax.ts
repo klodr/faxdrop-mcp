@@ -186,9 +186,9 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
     [
       "Check the delivery status of a previously sent fax.",
       "",
-      "USE WHEN: polling for the outcome of a fax sent via `faxdrop_send_fax`. Status values: `queued` | `sending` | `delivered` | `failed` | `partial`.",
+      "USE WHEN: polling for the outcome of a fax sent via `faxdrop_send_fax`. Status values: `queued` | `sending` | `completed` (or legacy `delivered`) | `failed` | `partial`.",
       "",
-      "DO NOT USE: for faxes sent outside this MCP (no provenance — server returns 404). Once status is `delivered`, `failed`, or `partial`, STOP polling — these are terminal.",
+      "DO NOT USE: for faxes sent outside this MCP (no provenance — server returns 404). Once status is `completed` (or `delivered`), `failed`, or `partial`, STOP polling — these are terminal.",
       "",
       "SIDE EFFECTS: each non-cached call hits the FaxDrop API and counts toward its per-key rate limits (no monetary cost). Terminal results are cached process-wide.",
       "",
@@ -203,7 +203,7 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
         .describe("The fax ID returned by faxdrop_send_fax (e.g. fax_abc123)."),
     },
     async ({ faxId }) => {
-      // Anti-poll-storm: terminal statuses (delivered/failed/partial) are
+      // Anti-poll-storm: terminal statuses (completed|delivered/failed/partial) are
       // cached process-wide. Re-polling them is a quota waste; serve from
       // cache + flag so the LLM stops looping.
       const cached = getCachedStatus(faxId);

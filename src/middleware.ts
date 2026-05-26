@@ -76,7 +76,7 @@ export const AUDIT_SAFE_RESPONSE_KEYS = Object.freeze([
   "recipientNumber",
   "faxId",
   "id", // response-side name for faxId
-  "status", // queued | sending | delivered | failed | partial
+  "status", // queued | sending | completed (or legacy: delivered) | failed | partial
   "pages", // page count on completion
   "completedAt", // ISO timestamp on completion
   "error", // error message on failure

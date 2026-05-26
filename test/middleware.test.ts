@@ -212,7 +212,7 @@ describe("Middleware", () => {
         recipientNumber: "+12125551234",
         faxId: "fax_abc123",
         id: "fax_abc123",
-        status: "delivered",
+        status: "completed",
         pages: 3,
         completedAt: "2026-04-22T10:15:00Z",
         error: null,
