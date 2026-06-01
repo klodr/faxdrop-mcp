@@ -159,6 +159,65 @@ describe("FaxDropClient", () => {
     expect(fd.get("senderPhone")).toBe("+12125550000");
   });
 
+  it("sendFax forwards sendEmail=false to suppress the delivery email", async () => {
+    let capturedInit: RequestInit | undefined;
+    global.fetch = (async (_url: URL | string, init?: RequestInit) => {
+      capturedInit = init;
+      return {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () =>
+          JSON.stringify({ success: true, faxId: "fax_q", deliveryEmail: "suppressed" }),
+        headers: { get: () => null },
+      };
+    }) as unknown as typeof fetch;
+
+    const client = new FaxDropClient({ apiKey: "k" });
+    await client.sendFax(pdfArgs({ sendEmail: false }));
+    const fd = capturedInit?.body as FormData;
+    expect(fd.get("sendEmail")).toBe("false");
+  });
+
+  it("sendFax forwards sendEmail=true when explicitly opted in", async () => {
+    let capturedInit: RequestInit | undefined;
+    global.fetch = (async (_url: URL | string, init?: RequestInit) => {
+      capturedInit = init;
+      return {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () =>
+          JSON.stringify({ success: true, faxId: "fax_e", deliveryEmail: "enabled" }),
+        headers: { get: () => null },
+      };
+    }) as unknown as typeof fetch;
+
+    const client = new FaxDropClient({ apiKey: "k" });
+    await client.sendFax(pdfArgs({ sendEmail: true }));
+    const fd = capturedInit?.body as FormData;
+    expect(fd.get("sendEmail")).toBe("true");
+  });
+
+  it("sendFax omits sendEmail from the form when not supplied", async () => {
+    let capturedInit: RequestInit | undefined;
+    global.fetch = (async (_url: URL | string, init?: RequestInit) => {
+      capturedInit = init;
+      return {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () => JSON.stringify({ success: true, faxId: "fax_n" }),
+        headers: { get: () => null },
+      };
+    }) as unknown as typeof fetch;
+
+    const client = new FaxDropClient({ apiKey: "k" });
+    await client.sendFax(pdfArgs());
+    const fd = capturedInit?.body as FormData;
+    expect(fd.get("sendEmail")).toBeNull();
+  });
+
   it("throws FaxDropError with parsed error body on non-2xx", async () => {
     mockFetch({
       ok: false,

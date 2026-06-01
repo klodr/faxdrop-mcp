@@ -37,6 +37,13 @@ export interface SendFaxArgs {
   subject?: string;
   senderCompany?: string;
   senderPhone?: string;
+  /**
+   * Optional: ask FaxDrop to suppress the per-fax delivery-confirmation email.
+   * Maps to FaxDrop's `sendEmail` form field — `false` = no confirmation email,
+   * `true` (server default) = email sent on completion. Failed-fax emails and
+   * operator alerts still send regardless.
+   */
+  sendEmail?: boolean;
 }
 
 export class FaxDropError extends Error {
@@ -92,6 +99,7 @@ export class FaxDropClient {
     if (args.subject !== undefined) form.set("subject", args.subject);
     if (args.senderCompany !== undefined) form.set("senderCompany", args.senderCompany);
     if (args.senderPhone !== undefined) form.set("senderPhone", args.senderPhone);
+    if (args.sendEmail !== undefined) form.set("sendEmail", String(args.sendEmail));
 
     return this.requestRaw("POST", "/api/send-fax", form);
   }
