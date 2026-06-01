@@ -318,6 +318,62 @@ describe("Tools wired through the server", () => {
     }
   });
 
+  it("faxdrop_send_fax defaults sendEmail to false (suppress delivery email)", async () => {
+    const pdf = join(tmpDir, "doc.pdf");
+    writeFileSync(pdf, "%PDF-1.4\n%fake\n");
+    const fetchSpy = vi.fn(async (_url: URL | string, _init?: RequestInit) => ({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      text: async () =>
+        JSON.stringify({ success: true, faxId: "fax_d", deliveryEmail: "suppressed" }),
+      headers: { get: () => null },
+    }));
+    global.fetch = fetchSpy as unknown as typeof fetch;
+    process.env.FAXDROP_MCP_NUMBER_GATE = "open";
+    try {
+      await callTool("faxdrop_send_fax", {
+        filePath: pdf,
+        recipientNumber: "+12125551234",
+        senderName: "Test",
+        senderEmail: "t@example.com",
+      });
+      const init = fetchSpy.mock.calls[0]?.[1];
+      const fd = init?.body as FormData;
+      expect(fd.get("sendEmail")).toBe("false");
+    } finally {
+      delete process.env.FAXDROP_MCP_NUMBER_GATE;
+    }
+  });
+
+  it("faxdrop_send_fax forwards sendEmail=true when the caller opts back in", async () => {
+    const pdf = join(tmpDir, "doc.pdf");
+    writeFileSync(pdf, "%PDF-1.4\n%fake\n");
+    const fetchSpy = vi.fn(async (_url: URL | string, _init?: RequestInit) => ({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      text: async () => JSON.stringify({ success: true, faxId: "fax_e", deliveryEmail: "enabled" }),
+      headers: { get: () => null },
+    }));
+    global.fetch = fetchSpy as unknown as typeof fetch;
+    process.env.FAXDROP_MCP_NUMBER_GATE = "open";
+    try {
+      await callTool("faxdrop_send_fax", {
+        filePath: pdf,
+        recipientNumber: "+12125551234",
+        senderName: "Test",
+        senderEmail: "t@example.com",
+        sendEmail: true,
+      });
+      const init = fetchSpy.mock.calls[0]?.[1];
+      const fd = init?.body as FormData;
+      expect(fd.get("sendEmail")).toBe("true");
+    } finally {
+      delete process.env.FAXDROP_MCP_NUMBER_GATE;
+    }
+  });
+
   it("faxdrop_send_fax returns isError when the phone-gate rejects (default 'closed' mode)", async () => {
     const pdf = join(tmpDir, "doc.pdf");
     writeFileSync(pdf, "%PDF-1.4\n%fake\n");

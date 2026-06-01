@@ -117,7 +117,11 @@ Send a fax. Uploads a local document **from the outbox** (default `~/FaxOutbox/`
 - `coverNote` (string, ≤500) — message body
 - `recipientName` (≤50), `subject` (≤200), `senderCompany` (≤100), `senderPhone` (validated E.164)
 
-**Returns:** `{ success, faxId, status, statusUrl }`
+**Notifications:**
+
+- `sendEmail` (boolean) — whether FaxDrop should email the sender a per-fax delivery confirmation. **Defaults to `false`** (suppress) — the MCP is built for batch/agent workflows where one email per fax floods the inbox, and the same information is already retrievable via `faxdrop_get_fax_status`. Set to `true` to opt back in. Failed-fax emails, operator alerts, refunds and status pages are unaffected. The send response echoes `deliveryEmail: enabled | suppressed`.
+
+**Returns:** `{ success, faxId, status, statusUrl, deliveryEmail }`
 
 ### 🔗 `faxdrop_pair_number`
 

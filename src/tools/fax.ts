@@ -85,6 +85,13 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
         .optional()
         .describe("Sender company shown on the cover page (max 100 chars)."),
       senderPhone: SENDER_PHONE.optional(),
+      sendEmail: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          "Whether FaxDrop should email the sender a per-fax delivery confirmation. Defaults to **false** (suppress) — the MCP is built for batch / agent workflows where one email per fax floods the inbox, and the same information is already available via `faxdrop_get_fax_status`. Set to true to opt back into the confirmation email. Failed-fax emails, operator alerts, refunds and status pages are unaffected. The send response echoes `deliveryEmail: enabled | suppressed`.",
+        ),
     },
     async (args) => {
       // 3-layer phone-number gate: TYPE → COUNTRY → per-number policy
