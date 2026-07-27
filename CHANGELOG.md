@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0](https://github.com/klodr/faxdrop-mcp/compare/v0.9.1...v0.10.0) (2026-07-27)
+
+
+### Added
+
+* **tool:** add sendEmail param to faxdrop_send_fax, default false ([#200](https://github.com/klodr/faxdrop-mcp/issues/200)) ([be0076f](https://github.com/klodr/faxdrop-mcp/commit/be0076fdd900fec8c58d4a84cb757db0ce9b6e89))
+
+
+### Fixed
+
+* **deps:** clear all open Dependabot security alerts ([#244](https://github.com/klodr/faxdrop-mcp/issues/244)) ([2eaa88e](https://github.com/klodr/faxdrop-mcp/commit/2eaa88e46dfe1215b467b3202f1361a9fca55531))
+* **status:** accept both "completed" (live) and "delivered" (doc) as terminal ([#193](https://github.com/klodr/faxdrop-mcp/issues/193)) ([4f45ec0](https://github.com/klodr/faxdrop-mcp/commit/4f45ec0c5c2100027d98663ec00c1a5a32c24e03))
+
+
+### Changed
+
+* bump actions/attest from 4.1.0 to 4.1.1 ([#225](https://github.com/klodr/faxdrop-mcp/issues/225)) ([fb5829a](https://github.com/klodr/faxdrop-mcp/commit/fb5829a1b41a328b517cc597994b5db998a4fc4c))
+* bump actions/attest-build-provenance from 4.1.0 to 4.1.1 ([#221](https://github.com/klodr/faxdrop-mcp/issues/221)) ([75755fe](https://github.com/klodr/faxdrop-mcp/commit/75755feff391fbc05e3051299d455b1aab822799))
+* bump actions/checkout from 6.0.2 to 7.0.0 ([#201](https://github.com/klodr/faxdrop-mcp/issues/201)) ([bd8597b](https://github.com/klodr/faxdrop-mcp/commit/bd8597bc7f4cf14af7e997f0050a311b34f96f05))
+* bump actions/create-github-app-token from 3.1.1 to 3.2.0 ([#190](https://github.com/klodr/faxdrop-mcp/issues/190)) ([d8d9a6b](https://github.com/klodr/faxdrop-mcp/commit/d8d9a6bac5c402eda1d545314d0d8137ba1e29a9))
+* bump docker/build-push-action from 7.1.0 to 7.3.0 ([#197](https://github.com/klodr/faxdrop-mcp/issues/197)) ([ab84b6c](https://github.com/klodr/faxdrop-mcp/commit/ab84b6cf851b910fe84dce9fbf2fcdafe00381cd))
+* bump docker/setup-buildx-action from 4.0.0 to 4.2.0 ([#196](https://github.com/klodr/faxdrop-mcp/issues/196)) ([a5b9069](https://github.com/klodr/faxdrop-mcp/commit/a5b90693029c77c943add68b59fc60b463687bc9))
+* bump github/codeql-action from 4.35.4 to 4.35.5 ([#189](https://github.com/klodr/faxdrop-mcp/issues/189)) ([b3e7d1b](https://github.com/klodr/faxdrop-mcp/commit/b3e7d1b36a2c3dedd41c3d99385b4d09c6019b27))
+* bump github/codeql-action/analyze from 4.35.5 to 4.36.3 ([#222](https://github.com/klodr/faxdrop-mcp/issues/222)) ([e865263](https://github.com/klodr/faxdrop-mcp/commit/e865263546a595fa9b85d51838934b9ed670ff4d))
+* bump gitleaks/gitleaks-action from 2.3.9 to 3.0.0 ([#220](https://github.com/klodr/faxdrop-mcp/issues/220)) ([5a4ec06](https://github.com/klodr/faxdrop-mcp/commit/5a4ec06e955be9b394d5160781c033cafa3e7a1f))
+* bump pinned Node 22.x to 22.23.1 ([#219](https://github.com/klodr/faxdrop-mcp/issues/219)) ([1469fd1](https://github.com/klodr/faxdrop-mcp/commit/1469fd133f4d183d2f3f281853af6362bae4c84a))
+* bump reusable SHAs to current klodr/.github main (orphan fix) ([#187](https://github.com/klodr/faxdrop-mcp/issues/187)) ([cf8d4a0](https://github.com/klodr/faxdrop-mcp/commit/cf8d4a00443e3147f435efd9103c32b590d6a1a8))
+* bump suzuki-shunsuke/pinact-action from 2.0.0 to 3.0.0 ([#195](https://github.com/klodr/faxdrop-mcp/issues/195)) ([3fcf9c8](https://github.com/klodr/faxdrop-mcp/commit/3fcf9c8d0810a74490fbb67463b2c1ad996d2ca9))
+* **ci:** reduce release-please trigger to 1 workflow_run ([#185](https://github.com/klodr/faxdrop-mcp/issues/185)) ([e673a52](https://github.com/klodr/faxdrop-mcp/commit/e673a520d25d5494c16606bfcc7ebbb8a576f33a))
+* **deps-dev:** bump the dev-dependencies group across 1 directory with 12 updates ([#218](https://github.com/klodr/faxdrop-mcp/issues/218)) ([0f36e56](https://github.com/klodr/faxdrop-mcp/commit/0f36e5624849e7faef1b095dd04a673e9cc15356))
+* **deps-dev:** bump the dev-dependencies group with 3 updates ([#226](https://github.com/klodr/faxdrop-mcp/issues/226)) ([12f1a7c](https://github.com/klodr/faxdrop-mcp/commit/12f1a7c260f5d5246714ed48d5bf87b01dcc1a50))
+* **deps-dev:** bump typescript-eslint from 8.59.3 to 8.59.4 in the dev-dependencies group ([#191](https://github.com/klodr/faxdrop-mcp/issues/191)) ([81ae274](https://github.com/klodr/faxdrop-mcp/commit/81ae2741d3530ecd4a01725fcc691851481980f4))
+* **deps:** bump libphonenumber-js from 1.13.2 to 1.13.4 in the production-dependencies group across 1 directory ([#199](https://github.com/klodr/faxdrop-mcp/issues/199)) ([4736780](https://github.com/klodr/faxdrop-mcp/commit/47367807a8b729ffd8af3ec2a99d684f16bb5ef8))
+* **deps:** bump libphonenumber-js from 1.13.4 to 1.13.8 in the production-dependencies group across 1 directory ([#205](https://github.com/klodr/faxdrop-mcp/issues/205)) ([9269122](https://github.com/klodr/faxdrop-mcp/commit/9269122c2fb308ac36d71d0751d2a318825ced3c))
+* **deps:** clear all OSV-Scanner vulnerabilities ([#215](https://github.com/klodr/faxdrop-mcp/issues/215)) ([f14b4d3](https://github.com/klodr/faxdrop-mcp/commit/f14b4d34b514599027c06619c700cab6a0ed0af5))
+* **deps:** relock to pull qs 6.15.2 fix for CVE-2026-8723 ([#186](https://github.com/klodr/faxdrop-mcp/issues/186)) ([b739b14](https://github.com/klodr/faxdrop-mcp/commit/b739b14b35c30245cc6991d1dd742240a463e16d))
+* **leak-detect:** bump reusable to skip bot-authored PRs ([#192](https://github.com/klodr/faxdrop-mcp/issues/192)) ([9e2e915](https://github.com/klodr/faxdrop-mcp/commit/9e2e9150d6fcede860b745abab031be83fa949c8))
+* **leak-detect:** bump to inline-JWT reusable + drop client-id ([#188](https://github.com/klodr/faxdrop-mcp/issues/188)) ([6c69388](https://github.com/klodr/faxdrop-mcp/commit/6c693880a76880816ab7b7fe8c2b155090a627ca))
+* **lint:** enable prevent-abbreviations with klodr/* allowList ([#183](https://github.com/klodr/faxdrop-mcp/issues/183)) ([99a681c](https://github.com/klodr/faxdrop-mcp/commit/99a681cf8a10b6b0501f35bbd2366bf93d7751a5))
+* pinact ignores for internal reusables + checkout hardening ([#217](https://github.com/klodr/faxdrop-mcp/issues/217)) ([220a85d](https://github.com/klodr/faxdrop-mcp/commit/220a85d4fab8b5ea756cbbf362442f43ce2565d0))
+* **release:** drop setup-node registry-url for OIDC publish ([#228](https://github.com/klodr/faxdrop-mcp/issues/228)) ([95f5301](https://github.com/klodr/faxdrop-mcp/commit/95f5301da36f4d36982f09a9c1bf39808e91ee81))
+* **release:** publish to npm via OIDC trusted publishing ([#227](https://github.com/klodr/faxdrop-mcp/issues/227)) ([433c403](https://github.com/klodr/faxdrop-mcp/commit/433c4035e665d7667863cdba21a39589dc70ed0a))
+* **release:** run publish on Node 24 (bundled npm 11.16, OIDC-ready) ([#229](https://github.com/klodr/faxdrop-mcp/issues/229)) ([2e29c81](https://github.com/klodr/faxdrop-mcp/commit/2e29c812e2747cd2e9366f3c3b489ec520bbf6bb))
+
 ## [0.9.1](https://github.com/klodr/faxdrop-mcp/compare/v0.9.0...v0.9.1) (2026-05-13)
 
 
