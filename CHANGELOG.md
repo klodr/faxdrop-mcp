@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.1](https://github.com/klodr/faxdrop-mcp/compare/v0.10.0...v0.10.1) (2026-09-26)
+
+
+### Fixed
+
+* **deps:** relock runtime dependencies: @modelcontextprotocol/sdk 1.30.0, zod 4.6.2, ipaddr.js 2.5.0, libphonenumber-js 1.13.13, hono 4.13.7, qs 6.16.0, ip-address 10.7.0, jose 6.2.12, express-rate-limit 8.7.0 ([83bfbf9](https://github.com/klodr/faxdrop-mcp/commit/83bfbf9f6d05c80ae54027cdbe81d141470f92ae))
+* **deps:** unpin the vulnerable fast-uri and js-yaml overrides and add smol-toml ^1.8.0 so OSV-Scanner passes again ([83bfbf9](https://github.com/klodr/faxdrop-mcp/commit/83bfbf9f6d05c80ae54027cdbe81d141470f92ae))
+
+
+### Changed
+
+* auto-approve dependabot minor and patch updates ([#266](https://github.com/klodr/faxdrop-mcp/issues/266)) ([f50935d](https://github.com/klodr/faxdrop-mcp/commit/f50935dcbfa70a0deecf9565cec6d9983f15560a))
+* bump actions/attest 4.2.2, actions/attest-build-provenance 4.2.2, anchore/sbom-action 0.24.2, docker/setup-buildx-action 4.4.1, docker/build-push-action 7.4.0, editorconfig-checker action 3.0.0 ([70ab322](https://github.com/klodr/faxdrop-mcp/commit/70ab322b44974661f493fa34dabf8dc52d4eb19a))
+* bump actions/checkout 7.0.1, actions/setup-node 7.0.0, github/codeql-action 4.38.1 (init, analyze, upload-sarif), ossf/scorecard-action 2.4.4 ([70ab322](https://github.com/klodr/faxdrop-mcp/commit/70ab322b44974661f493fa34dabf8dc52d4eb19a))
+* **deps-dev:** bump @types/node 22.20.4, eslint 10.11.0, fast-check 4.10.1, prettier 3.9.8 ([a98e9bd](https://github.com/klodr/faxdrop-mcp/commit/a98e9bd0441a2e1e423055ce2f2dc9b6c1570ddf))
+* **deps-dev:** relock dev dependencies: vitest 4.1.11, eslint 10.10.0, typescript-eslint 8.70.0, prettier 3.9.6, browserslist 4.28.9 ([83bfbf9](https://github.com/klodr/faxdrop-mcp/commit/83bfbf9f6d05c80ae54027cdbe81d141470f92ae))
+* **deps:** bump zod from 4.6.2 to 4.6.5 ([4582aec](https://github.com/klodr/faxdrop-mcp/commit/4582aec67e0055f0b9313402f3d331986218f4f6))
+* fix stale version comments on actions/checkout pins ([#271](https://github.com/klodr/faxdrop-mcp/issues/271)) ([de27fe4](https://github.com/klodr/faxdrop-mcp/commit/de27fe4a1feda94d775101e490983fb116d41f14))
+* pin editorconfig-checker to v3.11.3 (v4.0.0 dropped the artifact the action downloads) ([83bfbf9](https://github.com/klodr/faxdrop-mcp/commit/83bfbf9f6d05c80ae54027cdbe81d141470f92ae))
+
 ## [0.10.0](https://github.com/klodr/faxdrop-mcp/compare/v0.9.1...v0.10.0) (2026-07-27)
 
 
