@@ -124,7 +124,6 @@ export function registerFaxTools(server: McpServer, client: FaxDropClient): void
         throw error;
       }
       const { filePath: _filePath, ...rest } = args;
-      void _filePath;
       const data = await client.sendFax({
         ...rest,
         fileBytes: opened.bytes,
