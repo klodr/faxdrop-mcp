@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.3](https://github.com/klodr/faxdrop-mcp/compare/v0.10.2...v0.10.3) (2026-10-18)
+
+
+### Changed
+
+* bump the github-actions group across 1 directory with 7 updates ([#289](https://github.com/klodr/faxdrop-mcp/issues/289)) ([44f644c](https://github.com/klodr/faxdrop-mcp/commit/44f644c80c2eb5993c0918af58846da2adb9d663))
+* **deps-dev:** bump vitest and @vitest/coverage-v8 to 5.0.3 together ([#288](https://github.com/klodr/faxdrop-mcp/issues/288)) ([85262c7](https://github.com/klodr/faxdrop-mcp/commit/85262c77c3d19b0d29689d2f76360d7c10073134))
+
 ## [0.10.2](https://github.com/klodr/faxdrop-mcp/compare/v0.10.1...v0.10.2) (2026-10-18)
 
 
