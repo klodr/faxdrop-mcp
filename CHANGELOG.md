@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.2](https://github.com/klodr/faxdrop-mcp/compare/v0.10.1...v0.10.2) (2026-10-18)
+
+
+### Fixed
+
+* **deps:** clear every OSV finding blocking the required scan ([#284](https://github.com/klodr/faxdrop-mcp/issues/284)) ([d1ccbbe](https://github.com/klodr/faxdrop-mcp/commit/d1ccbbe6b7da932829999002d98d16fc7d0157ab))
+
+
+### Changed
+
+* **deps:** bump libphonenumber-js from 1.13.13 to 1.13.15 in the production-dependencies group across 1 directory ([#286](https://github.com/klodr/faxdrop-mcp/issues/286)) ([2480e11](https://github.com/klodr/faxdrop-mcp/commit/2480e11831dc6e10427735686aac33942f6eac55))
+
 ## [0.10.1](https://github.com/klodr/faxdrop-mcp/compare/v0.10.0...v0.10.1) (2026-09-26)
 
 
