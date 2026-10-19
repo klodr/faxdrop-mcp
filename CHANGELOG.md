@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0](https://github.com/klodr/faxdrop-mcp/compare/v0.10.3...v0.11.0) (2026-10-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* Node 22 is no longer supported; Node >= 24.18.1 is required.
+
+### Added
+
+* require node 24.18.1 and test on node 24 and 26 ([#291](https://github.com/klodr/faxdrop-mcp/issues/291)) ([0b1088b](https://github.com/klodr/faxdrop-mcp/commit/0b1088b621c03b537e12b4568ff01a80255b4e8b))
+
 ## [0.10.3](https://github.com/klodr/faxdrop-mcp/compare/v0.10.2...v0.10.3) (2026-10-18)
 
 
