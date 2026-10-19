@@ -101,7 +101,7 @@ user confirmation all live at that boundary.
 | **Fail closed** | 60 s fetch timeout. Missing `FAXDROP_API_KEY` → exit at startup. Invalid file path / extension / size → throw before opening the file. |
 | **Minimise attack surface** | No sourcemaps in published tarball (`prepublishOnly` sets `NODE_ENV=production`). Only `dist/`, `README.md`, `LICENSE` in the npm files allowlist. No HTTP transport (stdio only); no listening sockets. Only two tools exposed; rate limiting deliberately delegated to FaxDrop (no duplicate ladder of failure modes). |
 | **Secrets are env-only** | API key never on the command line, never in URL params, never in error bodies. `.env.example` shows shape only. Audit log mode `0o600`. |
-| **Auditable & reproducible** | Every release is signed and attested. Every commit triggers CI on Node 18/20/22 + CodeQL + Scorecard + Snyk + Socket. |
+| **Auditable & reproducible** | Every release is signed and attested. Every commit triggers CI on Node 24 and 26 + CodeQL + Scorecard + Snyk + Socket. |
 | **Open source, MIT** | Anyone can audit. Project continuity documented in [CONTINUITY.md](./CONTINUITY.md). |
 
 ## 4. Common implementation weaknesses countered
