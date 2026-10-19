@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.1](https://github.com/klodr/faxdrop-mcp/compare/v0.11.0...v0.11.1) (2026-10-19)
+
+
+### Changed
+
+* **deps:** bump zod from 4.6.5 to 4.6.6 in the production-dependencies group across 1 directory ([#293](https://github.com/klodr/faxdrop-mcp/issues/293)) ([2e428b5](https://github.com/klodr/faxdrop-mcp/commit/2e428b5b64f53e8ac56677a687f7db3e95a26cae))
+
 ## [0.11.0](https://github.com/klodr/faxdrop-mcp/compare/v0.10.3...v0.11.0) (2026-10-19)
 
 
