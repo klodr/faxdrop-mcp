@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.2](https://github.com/klodr/faxdrop-mcp/compare/v0.11.1...v0.11.2) (2026-10-20)
+
+
+### Changed
+
+* **deps-dev:** bump the dev-dependencies group across 1 directory with 3 updates ([#299](https://github.com/klodr/faxdrop-mcp/issues/299)) ([250143b](https://github.com/klodr/faxdrop-mcp/commit/250143b81a109a1741237843985f91cf678507fc))
+* **deps:** bump zod from 4.6.6 to 4.6.7 in the production-dependencies group across 1 directory ([#300](https://github.com/klodr/faxdrop-mcp/issues/300)) ([1a3d188](https://github.com/klodr/faxdrop-mcp/commit/1a3d188088774ae320e34c2b05a6718e7146db1b))
+* **qodo:** run pr-agent 0.47.0 with its image pinned by digest ([#298](https://github.com/klodr/faxdrop-mcp/issues/298)) ([bcb31ce](https://github.com/klodr/faxdrop-mcp/commit/bcb31ce2bc1ac11e9cbd3a5b168e1410655c86c8))
+
+
+### Documentation
+
+* state the reference servers' node 24 floor accurately ([#297](https://github.com/klodr/faxdrop-mcp/issues/297)) ([39fda61](https://github.com/klodr/faxdrop-mcp/commit/39fda6155df6d55e2caee997ff5e140f54cbfa9c))
+
 ## [0.11.1](https://github.com/klodr/faxdrop-mcp/compare/v0.11.0...v0.11.1) (2026-10-19)
 
 
