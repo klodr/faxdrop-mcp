@@ -15,3 +15,8 @@ ignore_actions:
   # Personal fork of qodo-ai/pr-agent, tracked by commit SHA (no tags).
   - name: klodr/pr-agent
     ref: "[0-9a-f]{40}"
+  # Docker container action, pinned by image digest in qodo-merge.yml.
+  # pinact (and Dependabot) cannot resolve docker:// references, so the
+  # digest is refreshed by hand; only a full sha256 digest is accepted.
+  - name: docker://pragent/pr-agent
+    ref: "sha256:[0-9a-f]{64}"
