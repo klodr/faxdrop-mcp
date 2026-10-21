@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.3](https://github.com/klodr/faxdrop-mcp/compare/v0.11.2...v0.11.3) (2026-10-21)
+
+
+### Fixed
+
+* **deps:** clear the hono and markdown-it OSV findings ([#303](https://github.com/klodr/faxdrop-mcp/issues/303)) ([da1185b](https://github.com/klodr/faxdrop-mcp/commit/da1185b6e7a8bdeebcd1953ce1280f3c49d4bbb2))
+
 ## [0.11.2](https://github.com/klodr/faxdrop-mcp/compare/v0.11.1...v0.11.2) (2026-10-20)
 
 
