@@ -195,6 +195,10 @@ What follows is the minimum an editor must know to avoid regressing it:
   fields, elides everything else with `[ELIDED:NNN]`. Property-tested.
   Adding a new tool that takes free-form input → extend the test, not
   the allowlist.
+- SSRF guard: `safe-url.ts` re-resolves the host before every fetch and
+  refuses non-public addresses. Its only exception is `MCP_TRUSTED_CIDRS`,
+  bounded by `parseTrustedCidrs` (size cap, forbidden ranges, strict IPv4)
+  and validated in `createServer`; never widen those bounds without a test.
 - Dry-run: `FAXDROP_MCP_DRY_RUN=true` short-circuits before the
   network call. Used for prompt smoke tests in CI.
 

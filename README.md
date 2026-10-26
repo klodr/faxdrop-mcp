@@ -189,6 +189,7 @@ The MCP does **not** add its own limiter; it forwards FaxDrop's response as a cl
 - **Always confirm with the user** (recipient, file, cover-page) before invoking `faxdrop_send_fax`. This is also baked into the tool description.
 - The MCP reads files from the user's local filesystem — only expose this server to agents you trust.
 - Test prompts safely with `FAXDROP_MCP_DRY_RUN=true`.
+- Behind a local proxy that answers DNS itself (Surge in enhanced mode hands out `198.18.0.0/15`), set `MCP_TRUSTED_CIDRS=198.18.0.0/15` so the SSRF guard accepts its addresses; prefer a single IP whenever the proxy allows it. Refused at startup: a malformed entry, more than 131,072 addresses in all (one range: IPv4 `/15` at most, IPv6 `/111`), anything that touches loopback, link-local, `0.0.0.0/8` or an IPv6 range carrying an IPv4 (an IPv4-mapped address such as `::ffff:10.47.83.1` counts as its IPv4).
 - See [SECURITY.md](.github/SECURITY.md) for the vulnerability reporting process.
 
 ## 🗺️ Roadmap
