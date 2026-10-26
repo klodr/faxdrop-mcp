@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0](https://github.com/klodr/faxdrop-mcp/compare/v0.11.3...v0.12.0) (2026-10-26)
+
+
+### Added
+
+* **safe-url:** trust the ranges listed in MCP_TRUSTED_CIDRS ([#305](https://github.com/klodr/faxdrop-mcp/issues/305)) ([ac8bffb](https://github.com/klodr/faxdrop-mcp/commit/ac8bffb5fadaadacc63513bd4cf539c2abb3fea6))
+
 ## [0.11.3](https://github.com/klodr/faxdrop-mcp/compare/v0.11.2...v0.11.3) (2026-10-21)
 
 
