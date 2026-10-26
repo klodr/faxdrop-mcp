@@ -46,6 +46,14 @@ the maintainer commits to, and limits that callers must account for.
   ULA / `.localhost` namespace are rejected — fail-fast at startup
   rather than silently routing the bearer API key + every fax payload
   to a cleartext or attacker-controlled endpoint.
+- **SSRF guard before every request**: `assertSafeUrl` re-resolves the
+  API host before each fetch and refuses any address that is not public
+  (loopback, RFC 1918, link-local, CGNAT, IPv6 ULA, …), which closes DNS
+  rebinding and redirect-into-private-host paths. Its only exception is
+  `MCP_TRUSTED_CIDRS` (unset by default), for a local proxy that answers
+  DNS with its own addresses: validated at startup, at most 131,072
+  addresses in all, never loopback, link-local, `0.0.0.0/8` or an IPv6
+  range carrying an IPv4. The FaxDrop host allowlist still applies.
 - **POSIX-only platform**: faxdrop-mcp requires `fs.constants.O_NOFOLLOW`
   (the symlink TOCTOU barrier between `realpath` and `open`). Windows
   does not expose `O_NOFOLLOW`, so the server refuses to start on
@@ -100,6 +108,11 @@ the maintainer commits to, and limits that callers must account for.
   client is compromised, your `FAXDROP_API_KEY` and the documents you have
   on disk can be stolen by the attacker. This MCP cannot detect or prevent
   that.
+- **A proxy you chose to trust**: with `MCP_TRUSTED_CIDRS` set, an
+  address inside those ranges is no longer checked by the SSRF guard;
+  whatever answers there (the local proxy) decides where the request,
+  the API key and the fax payload actually go. Keep the variable to the
+  proxy's own range, ideally a single IP, and leave it unset otherwise.
 - **Malicious LLM prompts (prompt injection)**: an LLM that exposes
   `faxdrop_send_fax` to untrusted content (an email, a fetched web page)
   can be tricked into sending an arbitrary file to an attacker-controlled
