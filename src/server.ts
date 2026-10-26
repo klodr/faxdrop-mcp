@@ -3,6 +3,7 @@ import ipaddr from "ipaddr.js";
 import { FaxDropClient } from "./client.js";
 import { registerAllTools } from "./tools/index.js";
 import { registerAllPrompts } from "./prompts/index.js";
+import { describeTrustedCidrs } from "./safe-url.js";
 
 // Bumped by release-please via the `x-release-please-version`
 // annotation on the line below; the manual `npm version` path is
@@ -137,6 +138,11 @@ export function validateBaseUrl(raw: string): void {
  * Build a fully wired MCP server: FaxDrop client + middleware-wrapped tools.
  * Does NOT connect to any transport — the caller decides (stdio for production,
  * InMemoryTransport for tests).
+ *
+ * Validates a supplied base URL and `MCP_TRUSTED_CIDRS` before constructing
+ * the server; validation errors propagate to the caller. Startup messages
+ * report a base URL override and the number of trusted ranges through
+ * `opts.log` (console.error by default); errors from that logger propagate.
  */
 export function createServer(opts: ServerOptions): McpServer {
   const log =
@@ -149,6 +155,9 @@ export function createServer(opts: ServerOptions): McpServer {
   // an invalid override fails the server startup, never silently routes to
   // http:// or a private host.
   if (opts.baseUrl) validateBaseUrl(opts.baseUrl);
+  // Fail at startup, not at the first request, on a bad MCP_TRUSTED_CIDRS.
+  const trusted = describeTrustedCidrs(process.env.MCP_TRUSTED_CIDRS);
+  if (trusted) log(`MCP_TRUSTED_CIDRS: the SSRF guard also accepts ${trusted}`);
 
   const client = new FaxDropClient({ apiKey: opts.apiKey, baseUrl: opts.baseUrl });
 

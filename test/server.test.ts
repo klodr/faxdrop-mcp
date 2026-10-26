@@ -55,7 +55,7 @@ describe("createServer", () => {
   it("does not log base URL override by default", () => {
     const logs: string[] = [];
     createServer({ apiKey: "fd_live_test", log: (m) => logs.push(m) });
-    expect(logs.length).toBe(0);
+    expect(logs.filter((m) => m.includes("base URL"))).toHaveLength(0);
   });
 
   it("exposes the package VERSION", () => {
