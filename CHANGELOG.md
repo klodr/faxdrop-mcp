@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.1](https://github.com/klodr/faxdrop-mcp/compare/v0.12.0...v0.12.1) (2026-11-16)
+
+
+### Fixed
+
+* **expect:** keep soft .resolves/.rejects error location (&lt;… ([40bd934](https://github.com/klodr/faxdrop-mcp/commit/40bd9348e16df1521a4c2a63811a0cc0854eeb1e))
+
+
+### Changed
+
+* bump the github-actions group across 1 directory with 5 updates ([#317](https://github.com/klodr/faxdrop-mcp/issues/317)) ([0739c67](https://github.com/klodr/faxdrop-mcp/commit/0739c67da5a004ae0bc3a8ad09e21b04da2890f1))
+* **deps-dev:** bump the dev-dependencies group across 1 directory with 7 updates ([#312](https://github.com/klodr/faxdrop-mcp/issues/312)) ([40bd934](https://github.com/klodr/faxdrop-mcp/commit/40bd9348e16df1521a4c2a63811a0cc0854eeb1e))
+* **deps-dev:** bump tsup from 8.5.1 to 9.0.0 ([#309](https://github.com/klodr/faxdrop-mcp/issues/309)) ([13a6874](https://github.com/klodr/faxdrop-mcp/commit/13a6874e9b7d7f7ff24059552901aae51fb080bd))
+* **deps:** bump @modelcontextprotocol/sdk from 1.32.1 to 1.32.2 in the production-dependencies group across 1 directory ([#311](https://github.com/klodr/faxdrop-mcp/issues/311)) ([d9d5191](https://github.com/klodr/faxdrop-mcp/commit/d9d51912d30ee85b0a5da2275810573b755256e1))
+* **deps:** clear the OSV findings on node-server, hono, minimatch ([#315](https://github.com/klodr/faxdrop-mcp/issues/315)) ([002f5a6](https://github.com/klodr/faxdrop-mcp/commit/002f5a6df34bb0f2cde97e24a5d0468e7a8d64df))
+* **deps:** pin re2js to ^2.8.7 (GHSA-gg6h-894w-4m9c) ([#318](https://github.com/klodr/faxdrop-mcp/issues/318)) ([68f4ec4](https://github.com/klodr/faxdrop-mcp/commit/68f4ec4aeb06a19f306c4b646d97c2a6229e7cc4))
+
+
+### Documentation
+
+* **security:** say the SSRF guard mitigates DNS rebinding ([#307](https://github.com/klodr/faxdrop-mcp/issues/307)) ([6118d38](https://github.com/klodr/faxdrop-mcp/commit/6118d38b1d2e3b5d053feee8e1b922ac71af3763))
+
 ## [0.12.0](https://github.com/klodr/faxdrop-mcp/compare/v0.11.3...v0.12.0) (2026-10-26)
 
 
