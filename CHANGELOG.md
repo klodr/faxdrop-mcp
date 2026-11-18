@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.2](https://github.com/klodr/faxdrop-mcp/compare/v0.12.1...v0.12.2) (2026-11-18)
+
+
+### Changed
+
+* **deps-dev:** bump typescript-eslint to 8.72.2 ([a623d43](https://github.com/klodr/faxdrop-mcp/commit/a623d4331af6a151e5eda22377f7a2fd03bdc2fa))
+* **deps:** update lockfile and ignore picomatch dev-only advisory ([#321](https://github.com/klodr/faxdrop-mcp/issues/321)) ([d807a11](https://github.com/klodr/faxdrop-mcp/commit/d807a115cf150b0d60b722a131449695a9862355))
+
 ## [0.12.1](https://github.com/klodr/faxdrop-mcp/compare/v0.12.0...v0.12.1) (2026-11-16)
 
 
