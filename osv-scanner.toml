@@ -3,15 +3,3 @@
 # Every entry here is a known finding with no fixed release, reviewed and
 # accepted for a limited time. `ignoreUntil` forces a re-review: the scan
 # fails again on that date, so an exception cannot outlive its reason.
-
-[[IgnoredVulns]]
-id = "GHSA-fc5q-39xc-vjpf"
-ignoreUntil = 2027-01-31T00:00:00Z
-reason = """
-picomatch <= 4.0.7 (2.3.2 and 4.0.7 in the lockfile): ReDoS through repeated
-single-branch extglobs. No fixed release exists. Dev-only: reached through
-lint-staged, micromatch (markdownlint-cli2) and vite/vitest, to expand the
-globs written in this repository's own scripts and config. Absent from the
-production dependency tree (`npm ls picomatch --omit=dev` is empty), never
-shipped in the published package and never fed untrusted input.
-"""
